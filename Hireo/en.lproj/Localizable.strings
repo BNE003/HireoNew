@@ -1,0 +1,159 @@
+/* 
+  Localizable.strings
+  Hireo
+
+  English Localization
+  Created by Benedikt Held on 19.08.25.
+*/
+
+// MARK: - General
+"ok" = "OK";
+"cancel" = "Cancel";
+"save" = "Save";
+"edit" = "Edit";
+"delete" = "Delete";
+"add" = "Add";
+"remove" = "Remove";
+"done" = "Done";
+"close" = "Close";
+"next" = "Next";
+"previous" = "Previous";
+"skip" = "Skip";
+"continue" = "Continue";
+
+// MARK: - Navigation & Tabs
+"profile" = "Profile";
+"applications" = "Applications";
+"templates" = "Templates";
+"documents" = "Documents";
+"settings" = "Settings";
+
+// MARK: - Onboarding
+"welcome.title" = "Welcome to Hireo";
+"welcome.subtitle" = "Create professional CVs and cover letters with ease";
+"welcome.get_started" = "Get Started";
+"welcome.description" = "Set up your profile to begin creating your first CV";
+
+// MARK: - Profile
+"profile.create_title" = "Create Your Profile";
+"profile.create_subtitle" = "Let's start with some basic information";
+"profile.edit_title" = "Edit Profile";
+"profile.personal_info" = "Personal Information";
+"profile.first_name" = "First Name";
+"profile.last_name" = "Last Name";
+"profile.job_title" = "Job Title";
+"profile.email" = "Email";
+"profile.phone" = "Phone";
+"profile.address" = "Address";
+"profile.street" = "Street";
+"profile.city" = "City";
+"profile.postal_code" = "Postal Code";
+"profile.country" = "Country";
+"profile.education" = "Education";
+"profile.work_experience" = "Work Experience";
+"profile.skills" = "Skills";
+"profile.projects" = "Projects";
+"profile.certificates" = "Certificates";
+"profile.languages" = "Languages";
+"profile.interests" = "Interests";
+"profile.create_profile" = "Create Profile";
+"profile.skip_for_now" = "Skip for Now";
+
+// MARK: - Applications
+"applications.new" = "New Application";
+"applications.empty.title" = "No Applications Yet";
+"applications.empty.description" = "Start by creating your first job application to keep track of your opportunities";
+"applications.company_name" = "Company Name";
+"applications.position" = "Position";
+"applications.application_date" = "Application Date";
+"applications.job_description" = "Job Description";
+"applications.contact_person" = "Contact Person";
+"applications.contact_name" = "Contact Name";
+"applications.contact_email" = "Contact Email";
+"applications.notes" = "Notes";
+"applications.additional_notes" = "Additional notes...";
+"applications.job_info" = "Job Information";
+
+// MARK: - Application Status
+"application.status.draft" = "Draft";
+"application.status.sent" = "Sent";
+"application.status.interview" = "Interview";
+"application.status.rejected" = "Rejected";
+"application.status.accepted" = "Accepted";
+"application.status.withdrawn" = "Withdrawn";
+
+// MARK: - Templates
+"templates.cv_templates" = "CV Templates";
+"templates.cover_letters" = "Cover Letters";
+"templates.use_template" = "Use Template";
+"templates.preview" = "Preview";
+
+// MARK: - Template Categories
+"template.category.modern" = "Modern";
+"template.category.classic" = "Classic";
+"template.category.creative" = "Creative";
+"template.category.professional" = "Professional";
+"template.category.minimal" = "Minimal";
+
+// MARK: - Documents
+"documents.cvs" = "CVs";
+"documents.cover_letters" = "Cover Letters";
+"documents.empty.cv" = "No CV Documents";
+"documents.empty.cover_letter" = "No Cover Letter Documents";
+"documents.empty.description" = "Create your first %@ using one of our templates";
+
+// MARK: - CV Sections
+"cv.section.personal_info" = "Personal Information";
+"cv.section.summary" = "Summary";
+"cv.section.work_experience" = "Work Experience";
+"cv.section.education" = "Education";
+"cv.section.skills" = "Skills";
+"cv.section.projects" = "Projects";
+"cv.section.certificates" = "Certificates";
+"cv.section.languages" = "Languages";
+"cv.section.interests" = "Interests";
+
+// MARK: - Skill Levels
+"skill.level.beginner" = "Beginner";
+"skill.level.intermediate" = "Intermediate";
+"skill.level.advanced" = "Advanced";
+"skill.level.expert" = "Expert";
+
+// MARK: - Language Levels
+"language.level.elementary" = "Elementary";
+"language.level.intermediate" = "Intermediate";
+"language.level.upper_intermediate" = "Upper Intermediate";
+"language.level.advanced" = "Advanced";
+"language.level.proficient" = "Proficient";
+"language.level.native" = "Native";
+
+// MARK: - Font Types
+"font.system" = "System";
+"font.serif" = "Serif";
+"font.modern" = "Modern";
+"font.classic" = "Classic";
+
+// MARK: - Settings
+"settings.preferences" = "Preferences";
+"settings.language" = "Language";
+"settings.notifications" = "Notifications";
+"settings.data" = "Data";
+"settings.icloud_sync" = "iCloud Sync";
+"settings.coming_soon" = "Coming Soon";
+"settings.export_data" = "Export Data";
+"settings.reset_data" = "Reset All Data";
+"settings.support" = "Support";
+"settings.help_faq" = "Help & FAQ";
+"settings.contact_support" = "Contact Support";
+"settings.about" = "About";
+"settings.version" = "Version";
+"settings.build" = "Build";
+"settings.reset_alert.title" = "Reset All Data";
+"settings.reset_alert.message" = "This action cannot be undone. All your profile data, applications, and documents will be permanently deleted.";
+"settings.reset_alert.reset" = "Reset";
+
+// MARK: - Error Messages
+"document.error.not_implemented" = "Feature not yet implemented";
+"document.error.invalid_template" = "Invalid template";
+"document.error.missing_user_data" = "Missing user data";
+"document.error.export_failed" = "Export failed";

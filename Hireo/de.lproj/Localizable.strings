@@ -1,0 +1,159 @@
+/* 
+  Localizable.strings
+  Hireo
+
+  German Localization
+  Created by Benedikt Held on 19.08.25.
+*/
+
+// MARK: - General
+"ok" = "OK";
+"cancel" = "Abbrechen";
+"save" = "Speichern";
+"edit" = "Bearbeiten";
+"delete" = "Löschen";
+"add" = "Hinzufügen";
+"remove" = "Entfernen";
+"done" = "Fertig";
+"close" = "Schließen";
+"next" = "Weiter";
+"previous" = "Zurück";
+"skip" = "Überspringen";
+"continue" = "Fortfahren";
+
+// MARK: - Navigation & Tabs
+"profile" = "Profil";
+"applications" = "Bewerbungen";
+"templates" = "Vorlagen";
+"documents" = "Dokumente";
+"settings" = "Einstellungen";
+
+// MARK: - Onboarding
+"welcome.title" = "Willkommen bei Hireo";
+"welcome.subtitle" = "Erstellen Sie professionelle Lebensläufe und Anschreiben mit Leichtigkeit";
+"welcome.get_started" = "Loslegen";
+"welcome.description" = "Richten Sie Ihr Profil ein, um Ihren ersten Lebenslauf zu erstellen";
+
+// MARK: - Profile
+"profile.create_title" = "Profil Erstellen";
+"profile.create_subtitle" = "Beginnen wir mit einigen grundlegenden Informationen";
+"profile.edit_title" = "Profil Bearbeiten";
+"profile.personal_info" = "Persönliche Daten";
+"profile.first_name" = "Vorname";
+"profile.last_name" = "Nachname";
+"profile.job_title" = "Berufsbezeichnung";
+"profile.email" = "E-Mail";
+"profile.phone" = "Telefon";
+"profile.address" = "Adresse";
+"profile.street" = "Straße";
+"profile.city" = "Stadt";
+"profile.postal_code" = "Postleitzahl";
+"profile.country" = "Land";
+"profile.education" = "Ausbildung";
+"profile.work_experience" = "Berufserfahrung";
+"profile.skills" = "Fähigkeiten";
+"profile.projects" = "Projekte";
+"profile.certificates" = "Zertifikate";
+"profile.languages" = "Sprachen";
+"profile.interests" = "Interessen";
+"profile.create_profile" = "Profil Erstellen";
+"profile.skip_for_now" = "Später";
+
+// MARK: - Applications
+"applications.new" = "Neue Bewerbung";
+"applications.empty.title" = "Noch keine Bewerbungen";
+"applications.empty.description" = "Erstellen Sie Ihre erste Bewerbung, um Ihre Chancen zu verfolgen";
+"applications.company_name" = "Firmenname";
+"applications.position" = "Position";
+"applications.application_date" = "Bewerbungsdatum";
+"applications.job_description" = "Stellenbeschreibung";
+"applications.contact_person" = "Ansprechpartner";
+"applications.contact_name" = "Name des Ansprechpartners";
+"applications.contact_email" = "E-Mail des Ansprechpartners";
+"applications.notes" = "Notizen";
+"applications.additional_notes" = "Weitere Notizen...";
+"applications.job_info" = "Stelleninformationen";
+
+// MARK: - Application Status
+"application.status.draft" = "Entwurf";
+"application.status.sent" = "Versendet";
+"application.status.interview" = "Vorstellungsgespräch";
+"application.status.rejected" = "Absage";
+"application.status.accepted" = "Zusage";
+"application.status.withdrawn" = "Zurückgezogen";
+
+// MARK: - Templates
+"templates.cv_templates" = "Lebenslauf-Vorlagen";
+"templates.cover_letters" = "Anschreiben";
+"templates.use_template" = "Vorlage Verwenden";
+"templates.preview" = "Vorschau";
+
+// MARK: - Template Categories
+"template.category.modern" = "Modern";
+"template.category.classic" = "Klassisch";
+"template.category.creative" = "Kreativ";
+"template.category.professional" = "Professionell";
+"template.category.minimal" = "Minimal";
+
+// MARK: - Documents
+"documents.cvs" = "Lebensläufe";
+"documents.cover_letters" = "Anschreiben";
+"documents.empty.cv" = "Keine Lebenslauf-Dokumente";
+"documents.empty.cover_letter" = "Keine Anschreiben-Dokumente";
+"documents.empty.description" = "Erstellen Sie Ihr erstes %@ mit einer unserer Vorlagen";
+
+// MARK: - CV Sections
+"cv.section.personal_info" = "Persönliche Daten";
+"cv.section.summary" = "Zusammenfassung";
+"cv.section.work_experience" = "Berufserfahrung";
+"cv.section.education" = "Ausbildung";
+"cv.section.skills" = "Fähigkeiten";
+"cv.section.projects" = "Projekte";
+"cv.section.certificates" = "Zertifikate";
+"cv.section.languages" = "Sprachen";
+"cv.section.interests" = "Interessen";
+
+// MARK: - Skill Levels
+"skill.level.beginner" = "Anfänger";
+"skill.level.intermediate" = "Fortgeschritten";
+"skill.level.advanced" = "Erfahren";
+"skill.level.expert" = "Experte";
+
+// MARK: - Language Levels
+"language.level.elementary" = "Grundkenntnisse";
+"language.level.intermediate" = "Fortgeschritten";
+"language.level.upper_intermediate" = "Gute Kenntnisse";
+"language.level.advanced" = "Sehr gute Kenntnisse";
+"language.level.proficient" = "Fließend";
+"language.level.native" = "Muttersprache";
+
+// MARK: - Font Types
+"font.system" = "System";
+"font.serif" = "Serif";
+"font.modern" = "Modern";
+"font.classic" = "Klassisch";
+
+// MARK: - Settings
+"settings.preferences" = "Einstellungen";
+"settings.language" = "Sprache";
+"settings.notifications" = "Benachrichtigungen";
+"settings.data" = "Daten";
+"settings.icloud_sync" = "iCloud-Synchronisation";
+"settings.coming_soon" = "Bald Verfügbar";
+"settings.export_data" = "Daten Exportieren";
+"settings.reset_data" = "Alle Daten Zurücksetzen";
+"settings.support" = "Support";
+"settings.help_faq" = "Hilfe & FAQ";
+"settings.contact_support" = "Support Kontaktieren";
+"settings.about" = "Über";
+"settings.version" = "Version";
+"settings.build" = "Build";
+"settings.reset_alert.title" = "Alle Daten Zurücksetzen";
+"settings.reset_alert.message" = "Diese Aktion kann nicht rückgängig gemacht werden. Alle Ihre Profildaten, Bewerbungen und Dokumente werden dauerhaft gelöscht.";
+"settings.reset_alert.reset" = "Zurücksetzen";
+
+// MARK: - Error Messages
+"document.error.not_implemented" = "Funktion noch nicht implementiert";
+"document.error.invalid_template" = "Ungültige Vorlage";
+"document.error.missing_user_data" = "Fehlende Benutzerdaten";
+"document.error.export_failed" = "Export fehlgeschlagen";
