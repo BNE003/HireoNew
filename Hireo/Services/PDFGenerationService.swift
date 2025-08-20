@@ -95,7 +95,7 @@ class CVPDFRenderer: PDFRenderer {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.main.async {
                 do {
-                    // Check if this is a classic template to use the new renderer
+                    // Check template category to use appropriate renderer
                     if self.template.category == .classic {
                         let classicRenderer = ClassicTemplatePDFRenderer(
                             userProfile: self.userProfile,
@@ -103,6 +103,14 @@ class CVPDFRenderer: PDFRenderer {
                             settings: self.settings
                         )
                         let pdfDocument = try classicRenderer.generatePDF()
+                        continuation.resume(returning: pdfDocument)
+                    } else if self.template.category == .modern {
+                        let modernRenderer = ModernTemplatePDFRenderer(
+                            userProfile: self.userProfile,
+                            template: self.template,
+                            settings: self.settings
+                        )
+                        let pdfDocument = try modernRenderer.generatePDF()
                         continuation.resume(returning: pdfDocument)
                     } else {
                         // Keep existing logic for other templates
@@ -1388,6 +1396,686 @@ class ClassicTemplatePDFRenderer {
         linePath.lineWidth = width
         linePath.stroke()
     }
+}
+
+class ModernTemplatePDFRenderer {
+    let userProfile: UserProfile
+    let template: CVTemplate
+    let settings: CVSettings
+    
+    // Constants for modern template design exactly matching the image
+    private let pageSize = CGSize(width: 595, height: 842) // A4 in points
+    private let sidebarWidth: CGFloat = 280
+    private let contentPadding: CGFloat = 30
+    private let sectionSpacing: CGFloat = 25
+    
+    // Colors matching the image exactly
+    private let sidebarColor = UIColor(hex: "#3B3B3B")
+    private let textColor = UIColor.black
+    private let whiteColor = UIColor.white
+    
+    // Modern Typography System - Using contemporary fonts for professional CV design
+    private lazy var nameFont = ModernTemplatePDFRenderer.createModernFont(size: 32, weight: .bold)
+    private lazy var titleFont = ModernTemplatePDFRenderer.createModernFont(size: 16, weight: .medium)
+    private lazy var sectionHeaderFont = ModernTemplatePDFRenderer.createModernFont(size: 18, weight: .semibold)
+    private lazy var sectionHeaderFontWhite = ModernTemplatePDFRenderer.createModernFont(size: 18, weight: .semibold)
+    private lazy var contentFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .regular)
+    private lazy var contentFontWhite = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .regular)
+    private lazy var smallFont = ModernTemplatePDFRenderer.createModernFont(size: 10, weight: .regular)
+    private lazy var dateFont = ModernTemplatePDFRenderer.createModernFont(size: 14, weight: .medium)
+    private lazy var institutionFont = ModernTemplatePDFRenderer.createModernFont(size: 14, weight: .semibold)
+    private lazy var degreeFont = ModernTemplatePDFRenderer.createModernFont(size: 12, weight: .regular)
+    private lazy var positionFont = ModernTemplatePDFRenderer.createModernFont(size: 14, weight: .semibold)
+    private lazy var companyFont = ModernTemplatePDFRenderer.createModernFont(size: 12, weight: .regular)
+    private lazy var achievementFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .regular)
+    
+    // Modern font creation with fallbacks for maximum compatibility
+    private static func createModernFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        // Try modern fonts in order of preference
+        let modernFontNames = [
+            "AvenirNext", // Contemporary, highly readable
+            "Helvetica Neue", // Clean and modern
+            "Avenir", // Excellent readability
+            "SF Pro Display", // Apple's modern system font
+            "SF Pro Text" // Apple's text optimized font
+        ]
+        
+        // Map weight to font name suffix for custom fonts
+        let weightSuffix: String
+        switch weight {
+        case .ultraLight: weightSuffix = "-UltraLight"
+        case .thin: weightSuffix = "-Thin"
+        case .light: weightSuffix = "-Light"
+        case .regular: weightSuffix = "-Regular"
+        case .medium: weightSuffix = "-Medium"
+        case .semibold: weightSuffix = "-DemiBold"
+        case .bold: weightSuffix = "-Bold"
+        case .heavy: weightSuffix = "-Heavy"
+        case .black: weightSuffix = "-Black"
+        default: weightSuffix = "-Regular"
+        }
+        
+        // Try each modern font
+        for fontName in modernFontNames {
+            let fullFontName = fontName + weightSuffix
+            if let font = UIFont(name: fullFontName, size: size) {
+                return font
+            }
+            // Try without weight suffix (for system fonts)
+            if let font = UIFont(name: fontName, size: size) {
+                return font
+            }
+        }
+        
+        // Fallback to system font with weight if no custom fonts are available
+        return UIFont.systemFont(ofSize: size, weight: weight)
+    }
+    
+    init(userProfile: UserProfile, template: CVTemplate, settings: CVSettings) {
+        self.userProfile = userProfile
+        self.template = template
+        self.settings = settings
+    }
+    
+    func generatePDF() throws -> PDFDocument {
+        let pageRect = CGRect(origin: .zero, size: pageSize)
+        
+        // Create PDF data
+        let pdfData = NSMutableData()
+        
+        // Create PDF graphics context
+        UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
+        UIGraphicsBeginPDFPage()
+        
+        // Draw the template
+        drawModernTemplate()
+        
+        UIGraphicsEndPDFContext()
+        
+        // Create PDFDocument from the generated data
+        guard let pdfDocument = PDFDocument(data: pdfData as Data) else {
+            throw PDFGenerationError.renderingFailed("Failed to create PDF document from data")
+        }
+        
+        return pdfDocument
+    }
+    
+    private func drawModernTemplate() {
+        // Draw left sidebar with dark background
+        drawSidebar()
+        
+        // Draw right content area
+        drawContentArea()
+    }
+    
+    private func drawSidebar() {
+        // Draw sidebar background
+        let sidebarRect = CGRect(x: 0, y: 0, width: sidebarWidth, height: pageSize.height)
+        sidebarColor.setFill()
+        UIBezierPath(rect: sidebarRect).fill()
+        
+        var currentY: CGFloat = contentPadding
+        
+        // Draw profile picture
+        currentY = drawProfilePicture(at: CGPoint(x: contentPadding, y: currentY))
+        currentY += 25
+        
+        // Draw About Me section
+        currentY = drawAboutMeSection(at: CGPoint(x: contentPadding, y: currentY))
+        currentY += sectionSpacing
+        
+        // Draw Contact section
+        currentY = drawContactSection(at: CGPoint(x: contentPadding, y: currentY))
+        currentY += sectionSpacing
+        
+        // Draw Skills section
+        currentY = drawSkillsSection(at: CGPoint(x: contentPadding, y: currentY))
+        currentY += sectionSpacing
+        
+        // Draw Language section
+        currentY = drawLanguageSection(at: CGPoint(x: contentPadding, y: currentY))
+    }
+    
+    private func drawContentArea() {
+        let contentX = sidebarWidth + contentPadding
+        let contentWidth = pageSize.width - sidebarWidth - (contentPadding * 2)
+        var currentY: CGFloat = 40
+        
+        // Draw header (name and title)
+        currentY = drawHeader(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+        currentY += 40
+        
+        // Draw Education section
+        currentY = drawEducationSection(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+        currentY += 40
+        
+        // Draw Experience section
+        currentY = drawExperienceSection(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+    }
+    
+    
+    private func drawAboutMeSection(at point: CGPoint) -> CGFloat {
+        var currentY = point.y
+        
+        // Section header
+        let headerText = "About Me"
+        currentY += drawSectionHeader(headerText, at: CGPoint(x: point.x, y: currentY), isWhiteText: true)
+        currentY += 12
+        
+        // About text
+        let aboutText = userProfile.personalInfo.summary.isEmpty ? 
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pharetra in lorem at laoreet. Donec hendrerit libero eget est tempor, quis tempus arcu elementum." : 
+            userProfile.personalInfo.summary
+        
+        let maxWidth = sidebarWidth - (contentPadding * 2)
+        currentY += drawMultilineText(aboutText, at: CGPoint(x: point.x, y: currentY), font: contentFontWhite, color: whiteColor, maxWidth: maxWidth, lineSpacing: 2)
+        
+        return currentY
+    }
+    
+    private func drawContactSection(at point: CGPoint) -> CGFloat {
+        var currentY = point.y
+        
+        // Section header
+        let headerText = "Contact"
+        currentY += drawSectionHeader(headerText, at: CGPoint(x: point.x, y: currentY), isWhiteText: true)
+        currentY += 20
+        
+        // Contact entries
+        let phone = userProfile.personalInfo.phone.isEmpty ? "+123-456-7890" : userProfile.personalInfo.phone
+        let email = userProfile.personalInfo.email.isEmpty ? "hello@reallygreatsite.com" : userProfile.personalInfo.email
+        let address = formatAddress()
+        
+        currentY += drawContactRow(phone, at: CGPoint(x: point.x, y: currentY))
+        currentY += 12
+        currentY += drawContactRow(email, at: CGPoint(x: point.x, y: currentY))
+        currentY += 12
+        currentY += drawContactRow(address, at: CGPoint(x: point.x, y: currentY))
+        
+        return currentY
+    }
+    
+    private func drawSkillsSection(at point: CGPoint) -> CGFloat {
+        var currentY = point.y
+        
+        // Section header
+        let headerText = "Skills"
+        currentY += drawSectionHeader(headerText, at: CGPoint(x: point.x, y: currentY), isWhiteText: true)
+        currentY += 20
+        
+        // Skills list
+        let skills = getSkillsList()
+        for skill in skills {
+            currentY += drawBulletPoint(skill, at: CGPoint(x: point.x, y: currentY))
+            currentY += 8
+        }
+        
+        return currentY
+    }
+    
+    private func drawLanguageSection(at point: CGPoint) -> CGFloat {
+        var currentY = point.y
+        
+        // Section header
+        let headerText = "Language"
+        currentY += drawSectionHeader(headerText, at: CGPoint(x: point.x, y: currentY), isWhiteText: true)
+        currentY += 20
+        
+        // Languages list
+        let languages = getLanguagesList()
+        for language in languages {
+            currentY += drawBulletPoint(language, at: CGPoint(x: point.x, y: currentY))
+            currentY += 8
+        }
+        
+        return currentY
+    }
+    
+    private func drawProfilePicture(at point: CGPoint) -> CGFloat {
+        let imageSize: CGFloat = 140
+        let imageCenter = CGPoint(x: point.x + (sidebarWidth - contentPadding * 2) / 2, y: point.y + imageSize / 2)
+        
+        if let profileImageData = userProfile.personalInfo.profileImageData,
+           let image = UIImage(data: profileImageData) {
+            // Draw the actual profile image with proper aspect ratio handling
+            let imageRect = CGRect(x: imageCenter.x - imageSize/2, y: imageCenter.y - imageSize/2, width: imageSize, height: imageSize)
+            
+            // Save the current graphics state
+            guard let context = UIGraphicsGetCurrentContext() else { return imageSize + 10 }
+            context.saveGState()
+            
+            // Create circular clipping path
+            let circlePath = UIBezierPath(ovalIn: imageRect)
+            circlePath.addClip()
+            
+            // Calculate aspect ratio and draw image to fill circle while maintaining proportions
+            let imageAspectRatio = image.size.width / image.size.height
+            let circleAspectRatio: CGFloat = 1.0 // Circle is always 1:1
+            
+            var drawRect: CGRect
+            if imageAspectRatio > circleAspectRatio {
+                // Image is wider than circle - fit height and center horizontally
+                let drawHeight = imageSize
+                let drawWidth = drawHeight * imageAspectRatio
+                let offsetX = (imageSize - drawWidth) / 2
+                drawRect = CGRect(x: imageRect.minX + offsetX, y: imageRect.minY, width: drawWidth, height: drawHeight)
+            } else {
+                // Image is taller than circle - fit width and center vertically
+                let drawWidth = imageSize
+                let drawHeight = drawWidth / imageAspectRatio
+                let offsetY = (imageSize - drawHeight) / 2
+                drawRect = CGRect(x: imageRect.minX, y: imageRect.minY + offsetY, width: drawWidth, height: drawHeight)
+            }
+            
+            // Draw image with proper aspect ratio
+            image.draw(in: drawRect)
+            
+            // Restore graphics state (removes clipping)
+            context.restoreGState()
+            
+            // Draw white border
+            whiteColor.setStroke()
+            let whiteBorderPath = UIBezierPath(ovalIn: imageRect)
+            whiteBorderPath.lineWidth = 6
+            whiteBorderPath.stroke()
+            
+            // Draw black outer border
+            textColor.setStroke()
+            let blackBorderPath = UIBezierPath(ovalIn: imageRect.insetBy(dx: -3, dy: -3))
+            blackBorderPath.lineWidth = 3
+            blackBorderPath.stroke()
+        } else {
+            // Draw placeholder circle
+            let imageRect = CGRect(x: imageCenter.x - imageSize/2, y: imageCenter.y - imageSize/2, width: imageSize, height: imageSize)
+            
+            // Fill with light gray background
+            UIColor.gray.withAlphaComponent(0.3).setFill()
+            UIBezierPath(ovalIn: imageRect).fill()
+            
+            // Draw person icon (simplified)
+            UIColor.gray.setFill()
+            let iconRect = CGRect(x: imageCenter.x - 30, y: imageCenter.y - 20, width: 60, height: 40)
+            UIBezierPath(ovalIn: iconRect).fill()
+            
+            // Draw borders matching the style
+            whiteColor.setStroke()
+            let whiteBorderPath = UIBezierPath(ovalIn: imageRect)
+            whiteBorderPath.lineWidth = 6
+            whiteBorderPath.stroke()
+            
+            textColor.setStroke()
+            let blackBorderPath = UIBezierPath(ovalIn: imageRect.insetBy(dx: -3, dy: -3))
+            blackBorderPath.lineWidth = 3
+            blackBorderPath.stroke()
+        }
+        
+        return imageSize + 10
+    }
+    
+    private func drawHeader(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        var currentY = point.y
+        
+        // Name (right-aligned with proper text fitting)
+        let fullName = userProfile.personalInfo.firstName.isEmpty && userProfile.personalInfo.lastName.isEmpty ? 
+            "Isabel Schumacher" : "\(userProfile.personalInfo.firstName) \(userProfile.personalInfo.lastName)"
+        
+        // Draw name with proper text fitting
+        currentY += drawRightAlignedText(fullName, at: CGPoint(x: point.x, y: currentY), font: nameFont, color: textColor, maxWidth: maxWidth)
+        currentY += 8
+        
+        // Title (right-aligned with proper text fitting)
+        let jobTitle = userProfile.personalInfo.title.isEmpty ? "Graphics Designer" : userProfile.personalInfo.title
+        
+        // Draw title with proper text fitting
+        currentY += drawRightAlignedText(jobTitle, at: CGPoint(x: point.x, y: currentY), font: titleFont, color: textColor, maxWidth: maxWidth)
+        
+        return currentY
+    }
+    
+    @discardableResult
+    private func drawRightAlignedText(_ text: String, at point: CGPoint, font: UIFont, color: UIColor, maxWidth: CGFloat) -> CGFloat {
+        // Calculate text size
+        let textSize = text.size(withAttributes: [.font: font])
+        
+        // If text fits, draw it right-aligned
+        if textSize.width <= maxWidth {
+            let x = point.x + maxWidth - textSize.width
+            drawText(text, at: CGPoint(x: x, y: point.y), font: font, color: color)
+            return textSize.height
+        }
+        
+        // If text is too long, truncate and fit it to the available width
+        let availableRect = CGRect(x: point.x, y: point.y, width: maxWidth, height: textSize.height)
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .right
+        paragraphStyle.lineBreakMode = .byTruncatingTail
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        attributedString.draw(in: availableRect)
+        
+        return textSize.height
+    }
+    
+    private func drawEducationSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        var currentY = point.y
+        
+        // Section header
+        let headerText = "Education"
+        currentY += drawSectionHeader(headerText, at: CGPoint(x: point.x, y: currentY), isWhiteText: false)
+        currentY += 20
+        
+        // Education entries
+        let educationEntries = getEducationEntries()
+        for (index, entry) in educationEntries.enumerated() {
+            currentY += drawEducationEntry(entry, at: CGPoint(x: point.x, y: currentY), maxWidth: maxWidth, isLast: index == educationEntries.count - 1)
+            currentY += 25
+        }
+        
+        return currentY
+    }
+    
+    private func drawExperienceSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        var currentY = point.y
+        
+        // Section header
+        let headerText = "Experience"
+        currentY += drawSectionHeader(headerText, at: CGPoint(x: point.x, y: currentY), isWhiteText: false)
+        currentY += 20
+        
+        // Experience entries
+        let experienceEntries = getExperienceEntries()
+        for (index, entry) in experienceEntries.enumerated() {
+            currentY += drawExperienceEntry(entry, at: CGPoint(x: point.x, y: currentY), maxWidth: maxWidth, isLast: index == experienceEntries.count - 1)
+            currentY += 25
+        }
+        
+        return currentY
+    }
+    
+    // Helper methods
+    private func drawSectionHeader(_ text: String, at point: CGPoint, isWhiteText: Bool) -> CGFloat {
+        let font = isWhiteText ? sectionHeaderFontWhite : sectionHeaderFont
+        let color = isWhiteText ? whiteColor : textColor
+        
+        drawText(text, at: point, font: font, color: color)
+        return font.lineHeight
+    }
+    
+    private func drawContactRow(_ text: String, at point: CGPoint) -> CGFloat {
+        // Draw bullet point
+        whiteColor.setFill()
+        let bulletRect = CGRect(x: point.x, y: point.y + 5, width: 4, height: 4)
+        UIBezierPath(ovalIn: bulletRect).fill()
+        
+        // Draw text
+        drawText(text, at: CGPoint(x: point.x + 10, y: point.y), font: contentFontWhite, color: whiteColor)
+        return contentFontWhite.lineHeight
+    }
+    
+    private func drawBulletPoint(_ text: String, at point: CGPoint) -> CGFloat {
+        // Draw bullet point
+        whiteColor.setFill()
+        let bulletRect = CGRect(x: point.x, y: point.y + 5, width: 4, height: 4)
+        UIBezierPath(ovalIn: bulletRect).fill()
+        
+        // Draw text
+        drawText(text, at: CGPoint(x: point.x + 10, y: point.y), font: contentFontWhite, color: whiteColor)
+        return contentFontWhite.lineHeight
+    }
+    
+    private func drawEducationEntry(_ entry: EducationDisplayEntry, at point: CGPoint, maxWidth: CGFloat, isLast: Bool) -> CGFloat {
+        var currentY = point.y
+        
+        // Draw timeline dot
+        textColor.setFill()
+        let dotRect = CGRect(x: point.x, y: currentY + 2, width: 8, height: 8)
+        UIBezierPath(ovalIn: dotRect).fill()
+        
+        // Draw timeline line (if not last)
+        if !isLast {
+            textColor.setStroke()
+            let linePath = UIBezierPath()
+            linePath.move(to: CGPoint(x: point.x + 4, y: currentY + 10))
+            linePath.addLine(to: CGPoint(x: point.x + 4, y: currentY + 50))
+            linePath.lineWidth = 2
+            linePath.stroke()
+        }
+        
+        // Draw content
+        let contentX = point.x + 15
+        let contentWidth = maxWidth - 15
+        
+        // Date
+        drawText(entry.dateRange, at: CGPoint(x: contentX, y: currentY), font: dateFont, color: textColor)
+        currentY += 18
+        
+        // Institution
+        drawText(entry.institution, at: CGPoint(x: contentX, y: currentY), font: institutionFont, color: textColor)
+        currentY += 16
+        
+        // Degree
+        drawText(entry.degree, at: CGPoint(x: contentX, y: currentY), font: degreeFont, color: textColor)
+        currentY += 14
+        
+        // Grade
+        if !entry.grade.isEmpty {
+            drawText(entry.grade, at: CGPoint(x: contentX, y: currentY), font: degreeFont, color: textColor)
+            currentY += 14
+        }
+        
+        return currentY - point.y
+    }
+    
+    private func drawExperienceEntry(_ entry: ExperienceDisplayEntry, at point: CGPoint, maxWidth: CGFloat, isLast: Bool) -> CGFloat {
+        var currentY = point.y
+        
+        // Draw timeline dot
+        textColor.setFill()
+        let dotRect = CGRect(x: point.x, y: currentY + 2, width: 8, height: 8)
+        UIBezierPath(ovalIn: dotRect).fill()
+        
+        // Draw timeline line (if not last)
+        if !isLast {
+            textColor.setStroke()
+            let linePath = UIBezierPath()
+            linePath.move(to: CGPoint(x: point.x + 4, y: currentY + 10))
+            linePath.addLine(to: CGPoint(x: point.x + 4, y: currentY + 70))
+            linePath.lineWidth = 2
+            linePath.stroke()
+        }
+        
+        // Draw content
+        let contentX = point.x + 15
+        let contentWidth = maxWidth - 15
+        
+        // Date
+        drawText(entry.dateRange, at: CGPoint(x: contentX, y: currentY), font: dateFont, color: textColor)
+        currentY += 18
+        
+        // Position
+        drawText(entry.position, at: CGPoint(x: contentX, y: currentY), font: positionFont, color: textColor)
+        currentY += 16
+        
+        // Company
+        drawText(entry.company, at: CGPoint(x: contentX, y: currentY), font: companyFont, color: textColor)
+        currentY += 16
+        
+        // Achievements
+        for achievement in entry.achievements.prefix(2) {
+            // Draw bullet
+            textColor.setFill()
+            let bulletRect = CGRect(x: contentX, y: currentY + 4, width: 3, height: 3)
+            UIBezierPath(ovalIn: bulletRect).fill()
+            
+            // Draw achievement text
+            currentY += drawMultilineText(achievement, at: CGPoint(x: contentX + 8, y: currentY), font: achievementFont, color: textColor, maxWidth: contentWidth - 8, lineSpacing: 1)
+            currentY += 4
+        }
+        
+        return currentY - point.y
+    }
+    
+    @discardableResult
+    private func drawText(_ text: String, at point: CGPoint, font: UIFont, color: UIColor) -> CGSize {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color
+        ]
+        
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        let size = attributedString.size()
+        
+        attributedString.draw(at: point)
+        
+        return size
+    }
+    
+    @discardableResult
+    private func drawMultilineText(_ text: String, at point: CGPoint, font: UIFont, color: UIColor, maxWidth: CGFloat, lineSpacing: CGFloat) -> CGFloat {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color
+        ]
+        
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        let constraintSize = CGSize(width: maxWidth, height: CGFloat.greatestFiniteMagnitude)
+        let boundingRect = attributedString.boundingRect(with: constraintSize, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+        
+        let drawingRect = CGRect(origin: point, size: boundingRect.size)
+        attributedString.draw(in: drawingRect)
+        
+        return boundingRect.height
+    }
+    
+    // Data helper methods (same as before)
+    private func formatAddress() -> String {
+        let address = userProfile.personalInfo.address
+        if address.street.isEmpty && address.city.isEmpty {
+            return "123 Anywhere Street., Any City."
+        }
+        return "\(address.street), \(address.city)"
+    }
+    
+    private func getSkillsList() -> [String] {
+        let allSkills = userProfile.skills.flatMap { category in
+            category.skills.map { $0.name }
+        }
+        
+        if allSkills.isEmpty {
+            return ["Web Design", "Branding", "Graphic Design", "SEO", "Marketing"]
+        }
+        
+        return Array(allSkills.prefix(5))
+    }
+    
+    private func getLanguagesList() -> [String] {
+        if userProfile.languages.isEmpty {
+            return ["English", "French"]
+        }
+        
+        return userProfile.languages.map { $0.name }
+    }
+    
+    private func getEducationEntries() -> [EducationDisplayEntry] {
+        if userProfile.education.isEmpty {
+            return [
+                EducationDisplayEntry(
+                    id: UUID(),
+                    dateRange: "(2011 -2015)",
+                    institution: "WARDIERE UNIVERSITY",
+                    degree: "Bachelor of Design",
+                    grade: "3.65"
+                ),
+                EducationDisplayEntry(
+                    id: UUID(),
+                    dateRange: "(2014 -2019)",
+                    institution: "WARDIERE UNIVERSITY",
+                    degree: "Bachelor of Design",
+                    grade: "3.74"
+                )
+            ]
+        }
+        
+        return userProfile.education.map { entry in
+            let startYear = Calendar.current.component(.year, from: entry.startDate)
+            let endYear = entry.endDate != nil ? Calendar.current.component(.year, from: entry.endDate!) : startYear
+            let dateRange = "(\(startYear) -\(endYear))"
+            
+            return EducationDisplayEntry(
+                id: entry.id,
+                dateRange: dateRange,
+                institution: entry.institution.uppercased(),
+                degree: entry.degree,
+                grade: entry.grade
+            )
+        }
+    }
+    
+    private func getExperienceEntries() -> [ExperienceDisplayEntry] {
+        if userProfile.workExperience.isEmpty {
+            return [
+                ExperienceDisplayEntry(
+                    id: UUID(),
+                    dateRange: "(2020 -2023)",
+                    position: "SENIOR GRAPHIC DESIGNER",
+                    company: "Fauget studio",
+                    achievements: [
+                        "create more than 100 graphic designs for big companies",
+                        "complete a lot of complicated work"
+                    ]
+                ),
+                ExperienceDisplayEntry(
+                    id: UUID(),
+                    dateRange: "(2017 - 2019)",
+                    position: "SENIOR GRAPHIC DESIGNER",
+                    company: "larana, inc",
+                    achievements: [
+                        "create more than 100 graphic designs for big companies",
+                        "complete a lot of complicated work"
+                    ]
+                )
+            ]
+        }
+        
+        return userProfile.workExperience.map { entry in
+            let startYear = Calendar.current.component(.year, from: entry.startDate)
+            let endYear = entry.endDate != nil ? Calendar.current.component(.year, from: entry.endDate!) : startYear
+            let dateRange = "(\(startYear) - \(endYear))"
+            
+            return ExperienceDisplayEntry(
+                id: entry.id,
+                dateRange: dateRange,
+                position: entry.position.uppercased(),
+                company: entry.company,
+                achievements: entry.achievements.isEmpty ? 
+                    [entry.description] : 
+                    entry.achievements
+            )
+        }
+    }
+}
+
+struct EducationDisplayEntry: Identifiable {
+    let id: UUID
+    let dateRange: String
+    let institution: String
+    let degree: String
+    let grade: String
+}
+
+struct ExperienceDisplayEntry: Identifiable {
+    let id: UUID
+    let dateRange: String
+    let position: String
+    let company: String
+    let achievements: [String]
 }
 
 extension UIColor {

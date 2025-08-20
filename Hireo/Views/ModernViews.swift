@@ -28,11 +28,7 @@ struct ModernTemplatesView: View {
 // MARK: - Modern Documents View
 struct ModernDocumentsView: View {
     var body: some View {
-        NavigationStack {
-            Text("Modern Documents View - Coming Soon")
-                .font(ModernTheme.Typography.headingMedium)
-                .navigationTitle("Documents")
-        }
+        DocumentsView()
     }
 }
 

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PDFKit
 
 struct DocumentsView: View {
     @EnvironmentObject private var dataManager: DataManager
@@ -37,17 +38,22 @@ struct DocumentsView: View {
 
 struct CVDocumentsTab: View {
     @EnvironmentObject private var dataManager: DataManager
+    private let columns = [
+        GridItem(.adaptive(minimum: 160), spacing: 16)
+    ]
     
     var body: some View {
         Group {
             if dataManager.cvDocuments.isEmpty {
                 EmptyDocumentsView(type: "CV")
             } else {
-                List {
-                    ForEach(dataManager.cvDocuments) { document in
-                        CVDocumentRowView(document: document)
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(dataManager.cvDocuments) { document in
+                            CVDocumentThumbnailView(document: document)
+                        }
                     }
-                    .onDelete(perform: deleteCVDocuments)
+                    .padding()
                 }
             }
         }
@@ -62,17 +68,22 @@ struct CVDocumentsTab: View {
 
 struct CoverLetterDocumentsTab: View {
     @EnvironmentObject private var dataManager: DataManager
+    private let columns = [
+        GridItem(.adaptive(minimum: 160), spacing: 16)
+    ]
     
     var body: some View {
         Group {
             if dataManager.coverLetterDocuments.isEmpty {
                 EmptyDocumentsView(type: "Cover Letter")
             } else {
-                List {
-                    ForEach(dataManager.coverLetterDocuments) { document in
-                        CoverLetterDocumentRowView(document: document)
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(dataManager.coverLetterDocuments) { document in
+                            CoverLetterDocumentThumbnailView(document: document)
+                        }
                     }
-                    .onDelete(perform: deleteCoverLetterDocuments)
+                    .padding()
                 }
             }
         }
@@ -109,87 +120,102 @@ struct EmptyDocumentsView: View {
     }
 }
 
-struct CVDocumentRowView: View {
+struct CVDocumentThumbnailView: View {
     let document: CVDocument
     @EnvironmentObject private var dataManager: DataManager
-    @State private var showingDocumentDetail = false
     @State private var showingPDFPreview = false
     @State private var generatedPDFData: Data?
-    @State private var isExporting = false
+    @State private var thumbnailImage: UIImage?
+    @State private var isGenerating = false
     @State private var errorMessage: String?
     @State private var showingError = false
+    @State private var showingDeleteConfirmation = false
     
     var body: some View {
         Button(action: {
-            showingDocumentDetail = true
+            generateAndShowPDF()
         }) {
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(document.fileName)
-                        .font(.headline)
-                        .foregroundColor(.primary)
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                        .aspectRatio(210/297, contentMode: .fit) // A4 aspect ratio
                     
-                    HStack {
-                        if let template = dataManager.getCVTemplate(by: document.templateId) {
-                            Text(template.name)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        // Color scheme indicator
-                        Circle()
-                            .fill(Color(hex: document.colorScheme.primaryColor))
-                            .frame(width: 12, height: 12)
-                    }
-                    
-                    HStack {
-                        Text(document.lastModified.formatted(date: .abbreviated, time: .omitted))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        if let application = dataManager.applications.first(where: { $0.id == document.applicationId }) {
-                            Spacer()
-                            Text("• \(application.companyName)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 8) {
-                    Button(action: exportPDF) {
-                        HStack(spacing: 4) {
-                            if isExporting {
-                                ProgressView()
-                                    .scaleEffect(0.6)
-                            } else {
-                                Image(systemName: "square.and.arrow.up")
+                    if let thumbnailImage = thumbnailImage {
+                        Image(uiImage: thumbnailImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    } else if isGenerating {
+                        ProgressView()
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "doc.text")
+                                .font(.system(size: 40))
+                                .foregroundColor(Color(hex: document.colorScheme.primaryColor))
+                            
+                            if let template = dataManager.getCVTemplate(by: document.templateId) {
+                                Text(template.name)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                         }
-                        .foregroundColor(.blue)
-                        .padding(8)
                     }
-                    .buttonStyle(.plain)
-                    .disabled(isExporting)
                     
-                    Button(action: previewPDF) {
-                        Image(systemName: "eye")
-                            .foregroundColor(.green)
-                            .padding(8)
+                    // Color scheme indicator
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Circle()
+                                .fill(Color(hex: document.colorScheme.primaryColor))
+                                .frame(width: 16, height: 16)
+                                .padding(.top, 8)
+                                .padding(.trailing, 8)
+                        }
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
                 }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(document.fileName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    
+                    Text(document.lastModified.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
+                    if let application = dataManager.applications.first(where: { $0.id == document.applicationId }) {
+                        Text(application.companyName)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showingDocumentDetail) {
-            CVDocumentDetailView(document: document)
+        .contextMenu {
+            Button(action: exportPDF) {
+                Label("Export PDF", systemImage: "square.and.arrow.up")
+            }
+            
+            Button(action: duplicateDocument) {
+                Label("Duplicate", systemImage: "doc.on.doc")
+            }
+            
+            Divider()
+            
+            Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .onAppear {
+            generateThumbnail()
         }
         .sheet(isPresented: $showingPDFPreview) {
             if let pdfData = generatedPDFData {
@@ -201,11 +227,101 @@ struct CVDocumentRowView: View {
         } message: {
             Text(errorMessage ?? "An unknown error occurred")
         }
+        .alert("Delete Document", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteDocument()
+            }
+        } message: {
+            Text("Are you sure you want to delete '\(document.fileName)'? This action cannot be undone.")
+        }
+    }
+    
+    private func generateThumbnail() {
+        guard thumbnailImage == nil && !isGenerating else { return }
+        
+        isGenerating = true
+        
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                if let pdfDocument = PDFDocument(data: pdfData),
+                   let page = pdfDocument.page(at: 0) {
+                    let pageSize = page.bounds(for: .mediaBox)
+                    let thumbnailWidth: CGFloat = 200
+                    let thumbnailHeight = thumbnailWidth * (pageSize.height / pageSize.width)
+                    let renderer = UIGraphicsImageRenderer(size: CGSize(width: thumbnailWidth, height: thumbnailHeight))
+                    
+                    let image = renderer.image { context in
+                        UIColor.white.set()
+                        context.fill(CGRect(origin: .zero, size: renderer.format.bounds.size))
+                        
+                        let cgContext = context.cgContext
+                        cgContext.saveGState()
+                        
+                        // Transform coordinate system for PDF rendering
+                        cgContext.translateBy(x: 0, y: thumbnailHeight)
+                        cgContext.scaleBy(x: 1, y: -1)
+                        
+                        // Scale to fit the thumbnail while maintaining aspect ratio
+                        let scaleX = thumbnailWidth / pageSize.width
+                        let scaleY = thumbnailHeight / pageSize.height
+                        let scale = min(scaleX, scaleY)
+                        
+                        cgContext.scaleBy(x: scale, y: scale)
+                        
+                        // Center the content if needed
+                        let scaledWidth = pageSize.width * scale
+                        let scaledHeight = pageSize.height * scale
+                        let offsetX = (thumbnailWidth - scaledWidth) / (2 * scale)
+                        let offsetY = (thumbnailHeight - scaledHeight) / (2 * scale)
+                        cgContext.translateBy(x: offsetX, y: offsetY)
+                        
+                        // Draw the PDF page
+                        page.draw(with: .mediaBox, to: cgContext)
+                        
+                        cgContext.restoreGState()
+                    }
+                    
+                    await MainActor.run {
+                        self.thumbnailImage = image
+                        self.isGenerating = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isGenerating = false
+                }
+            }
+        }
+    }
+    
+    private func generateAndShowPDF() {
+        guard !isGenerating else { return }
+        
+        isGenerating = true
+        
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                await MainActor.run {
+                    self.generatedPDFData = pdfData
+                    self.showingPDFPreview = true
+                    self.isGenerating = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                    self.isGenerating = false
+                }
+            }
+        }
     }
     
     private func exportPDF() {
-        isExporting = true
-        
         Task {
             do {
                 let pdfData = try await document.generatePDF()
@@ -218,125 +334,139 @@ struct CVDocumentRowView: View {
                        let rootVC = window.rootViewController {
                         rootVC.present(activityVC, animated: true)
                     }
-                    
-                    self.isExporting = false
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.showingError = true
-                    self.isExporting = false
                 }
             }
         }
     }
     
-    private func previewPDF() {
-        Task {
-            do {
-                let pdfData = try await document.generatePDF()
-                
-                await MainActor.run {
-                    self.generatedPDFData = pdfData
-                    self.showingPDFPreview = true
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.showingError = true
-                }
-            }
-        }
+    private func duplicateDocument() {
+        guard let userProfile = dataManager.userProfile else { return }
+        
+        var newDocument = CVDocument(
+            userProfileId: userProfile.id,
+            applicationId: document.applicationId,
+            templateId: document.templateId
+        )
+        
+        newDocument.colorScheme = document.colorScheme
+        newDocument.fontFamily = document.fontFamily
+        newDocument.customSettings = document.customSettings
+        newDocument.fileName = "\(document.fileName) Copy"
+        
+        dataManager.saveCVDocument(newDocument)
+    }
+    
+    private func deleteDocument() {
+        dataManager.deleteCVDocument(document)
     }
 }
 
-struct CoverLetterDocumentRowView: View {
+struct CoverLetterDocumentThumbnailView: View {
     let document: CoverLetterDocument
     @EnvironmentObject private var dataManager: DataManager
-    @State private var showingDocumentDetail = false
     @State private var showingPDFPreview = false
     @State private var generatedPDFData: Data?
-    @State private var isExporting = false
+    @State private var thumbnailImage: UIImage?
+    @State private var isGenerating = false
     @State private var errorMessage: String?
     @State private var showingError = false
+    @State private var showingDeleteConfirmation = false
     
     var body: some View {
         Button(action: {
-            showingDocumentDetail = true
+            generateAndShowPDF()
         }) {
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(document.fileName)
-                        .font(.headline)
-                        .foregroundColor(.primary)
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                        .aspectRatio(210/297, contentMode: .fit) // A4 aspect ratio
                     
-                    HStack {
-                        if let template = dataManager.getCoverLetterTemplate(by: document.templateId) {
-                            Text(template.name)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        // Color scheme indicator
-                        Circle()
-                            .fill(Color(hex: document.colorScheme.primaryColor))
-                            .frame(width: 12, height: 12)
-                    }
-                    
-                    HStack {
-                        Text(document.lastModified.formatted(date: .abbreviated, time: .omitted))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        if let application = dataManager.applications.first(where: { $0.id == document.applicationId }) {
-                            Spacer()
-                            Text("• \(application.companyName)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        } else if !document.content.recipientCompany.isEmpty {
-                            Spacer()
-                            Text("• \(document.content.recipientCompany)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 8) {
-                    Button(action: exportPDF) {
-                        HStack(spacing: 4) {
-                            if isExporting {
-                                ProgressView()
-                                    .scaleEffect(0.6)
-                            } else {
-                                Image(systemName: "square.and.arrow.up")
+                    if let thumbnailImage = thumbnailImage {
+                        Image(uiImage: thumbnailImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    } else if isGenerating {
+                        ProgressView()
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "doc.plaintext")
+                                .font(.system(size: 40))
+                                .foregroundColor(Color(hex: document.colorScheme.primaryColor))
+                            
+                            if let template = dataManager.getCoverLetterTemplate(by: document.templateId) {
+                                Text(template.name)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                         }
-                        .foregroundColor(.blue)
-                        .padding(8)
                     }
-                    .buttonStyle(.plain)
-                    .disabled(isExporting)
                     
-                    Button(action: previewPDF) {
-                        Image(systemName: "eye")
-                            .foregroundColor(.green)
-                            .padding(8)
+                    // Color scheme indicator
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Circle()
+                                .fill(Color(hex: document.colorScheme.primaryColor))
+                                .frame(width: 16, height: 16)
+                                .padding(.top, 8)
+                                .padding(.trailing, 8)
+                        }
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
                 }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(document.fileName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    
+                    Text(document.lastModified.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
+                    if let application = dataManager.applications.first(where: { $0.id == document.applicationId }) {
+                        Text(application.companyName)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    } else if !document.content.recipientCompany.isEmpty {
+                        Text(document.content.recipientCompany)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showingDocumentDetail) {
-            CoverLetterDocumentDetailView(document: document)
+        .contextMenu {
+            Button(action: exportPDF) {
+                Label("Export PDF", systemImage: "square.and.arrow.up")
+            }
+            
+            Button(action: duplicateDocument) {
+                Label("Duplicate", systemImage: "doc.on.doc")
+            }
+            
+            Divider()
+            
+            Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .onAppear {
+            generateThumbnail()
         }
         .sheet(isPresented: $showingPDFPreview) {
             if let pdfData = generatedPDFData {
@@ -348,11 +478,101 @@ struct CoverLetterDocumentRowView: View {
         } message: {
             Text(errorMessage ?? "An unknown error occurred")
         }
+        .alert("Delete Document", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteDocument()
+            }
+        } message: {
+            Text("Are you sure you want to delete '\(document.fileName)'? This action cannot be undone.")
+        }
+    }
+    
+    private func generateThumbnail() {
+        guard thumbnailImage == nil && !isGenerating else { return }
+        
+        isGenerating = true
+        
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                if let pdfDocument = PDFDocument(data: pdfData),
+                   let page = pdfDocument.page(at: 0) {
+                    let pageSize = page.bounds(for: .mediaBox)
+                    let thumbnailWidth: CGFloat = 200
+                    let thumbnailHeight = thumbnailWidth * (pageSize.height / pageSize.width)
+                    let renderer = UIGraphicsImageRenderer(size: CGSize(width: thumbnailWidth, height: thumbnailHeight))
+                    
+                    let image = renderer.image { context in
+                        UIColor.white.set()
+                        context.fill(CGRect(origin: .zero, size: renderer.format.bounds.size))
+                        
+                        let cgContext = context.cgContext
+                        cgContext.saveGState()
+                        
+                        // Transform coordinate system for PDF rendering
+                        cgContext.translateBy(x: 0, y: thumbnailHeight)
+                        cgContext.scaleBy(x: 1, y: -1)
+                        
+                        // Scale to fit the thumbnail while maintaining aspect ratio
+                        let scaleX = thumbnailWidth / pageSize.width
+                        let scaleY = thumbnailHeight / pageSize.height
+                        let scale = min(scaleX, scaleY)
+                        
+                        cgContext.scaleBy(x: scale, y: scale)
+                        
+                        // Center the content if needed
+                        let scaledWidth = pageSize.width * scale
+                        let scaledHeight = pageSize.height * scale
+                        let offsetX = (thumbnailWidth - scaledWidth) / (2 * scale)
+                        let offsetY = (thumbnailHeight - scaledHeight) / (2 * scale)
+                        cgContext.translateBy(x: offsetX, y: offsetY)
+                        
+                        // Draw the PDF page
+                        page.draw(with: .mediaBox, to: cgContext)
+                        
+                        cgContext.restoreGState()
+                    }
+                    
+                    await MainActor.run {
+                        self.thumbnailImage = image
+                        self.isGenerating = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isGenerating = false
+                }
+            }
+        }
+    }
+    
+    private func generateAndShowPDF() {
+        guard !isGenerating else { return }
+        
+        isGenerating = true
+        
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                await MainActor.run {
+                    self.generatedPDFData = pdfData
+                    self.showingPDFPreview = true
+                    self.isGenerating = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                    self.isGenerating = false
+                }
+            }
+        }
     }
     
     private func exportPDF() {
-        isExporting = true
-        
         Task {
             do {
                 let pdfData = try await document.generatePDF()
@@ -365,35 +585,35 @@ struct CoverLetterDocumentRowView: View {
                        let rootVC = window.rootViewController {
                         rootVC.present(activityVC, animated: true)
                     }
-                    
-                    self.isExporting = false
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.showingError = true
-                    self.isExporting = false
                 }
             }
         }
     }
     
-    private func previewPDF() {
-        Task {
-            do {
-                let pdfData = try await document.generatePDF()
-                
-                await MainActor.run {
-                    self.generatedPDFData = pdfData
-                    self.showingPDFPreview = true
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.showingError = true
-                }
-            }
-        }
+    private func duplicateDocument() {
+        guard let userProfile = dataManager.userProfile else { return }
+        
+        var newDocument = CoverLetterDocument(
+            userProfileId: userProfile.id,
+            applicationId: document.applicationId,
+            templateId: document.templateId
+        )
+        
+        newDocument.colorScheme = document.colorScheme
+        newDocument.fontFamily = document.fontFamily
+        newDocument.content = document.content
+        newDocument.fileName = "\(document.fileName) Copy"
+        
+        dataManager.saveCoverLetterDocument(newDocument)
+    }
+    
+    private func deleteDocument() {
+        dataManager.deleteCoverLetterDocument(document)
     }
 }
 

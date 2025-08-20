@@ -155,6 +155,9 @@ class DataManager: ObservableObject {
             } else {
                 cvDocuments.append(document)
             }
+            
+            // Re-sort to ensure newest documents appear first
+            cvDocuments.sort { $0.lastModified > $1.lastModified }
         } catch {
             print("Failed to save CV document: \(error)")
         }
@@ -171,6 +174,9 @@ class DataManager: ObservableObject {
             } else {
                 coverLetterDocuments.append(document)
             }
+            
+            // Re-sort to ensure newest documents appear first
+            coverLetterDocuments.sort { $0.lastModified > $1.lastModified }
         } catch {
             print("Failed to save cover letter document: \(error)")
         }
