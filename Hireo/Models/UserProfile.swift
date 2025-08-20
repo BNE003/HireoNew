@@ -41,6 +41,7 @@ struct PersonalInfo: Codable {
     var address: Address
     var dateOfBirth: Date?
     var profileImageData: Data?
+    var summary: String
     
     init() {
         self.firstName = ""
@@ -51,6 +52,7 @@ struct PersonalInfo: Codable {
         self.address = Address()
         self.dateOfBirth = nil
         self.profileImageData = nil
+        self.summary = ""
     }
 }
 

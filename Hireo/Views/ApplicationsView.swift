@@ -72,10 +72,11 @@ struct EmptyApplicationsView: View {
 
 struct ApplicationRowView: View {
     let application: Application
+    @State private var showingApplicationDetail = false
     
     var body: some View {
         Button(action: {
-            // TODO: Navigate to application details
+            showingApplicationDetail = true
         }) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -92,13 +93,26 @@ struct ApplicationRowView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                Text(application.applicationDate, style: .date)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                HStack {
+                    Text(application.applicationDate, style: .date)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    if !application.notes.isEmpty {
+                        Image(systemName: "note.text")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
+        .sheet(isPresented: $showingApplicationDetail) {
+            ApplicationDetailView(application: application)
+        }
     }
 }
 

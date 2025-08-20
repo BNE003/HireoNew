@@ -68,7 +68,31 @@ protocol DocumentExportable {
 
 extension CVDocument: DocumentExportable {
     func generatePDF() async throws -> Data {
-        throw DocumentError.notImplemented
+        let userProfile = await DataManager.shared.userProfile
+        guard let userProfile = userProfile else {
+            throw DocumentError.missingUserData
+        }
+        
+        let template = await DataManager.shared.getCVTemplate(by: templateId)
+        guard let template = template else {
+            throw DocumentError.invalidTemplate
+        }
+        
+        do {
+            let pdfDocument = try await PDFGenerationService.shared.generateCV(
+                userProfile: userProfile,
+                template: template,
+                customSettings: customSettings
+            )
+            
+            guard let data = pdfDocument.dataRepresentation() else {
+                throw DocumentError.exportFailed("Failed to convert PDF to data")
+            }
+            
+            return data
+        } catch {
+            throw DocumentError.exportFailed(error.localizedDescription)
+        }
     }
     
     func getPreviewImage() async -> Data? {
@@ -78,7 +102,31 @@ extension CVDocument: DocumentExportable {
 
 extension CoverLetterDocument: DocumentExportable {
     func generatePDF() async throws -> Data {
-        throw DocumentError.notImplemented
+        let userProfile = await DataManager.shared.userProfile
+        guard let userProfile = userProfile else {
+            throw DocumentError.missingUserData
+        }
+        
+        let template = await DataManager.shared.getCoverLetterTemplate(by: templateId)
+        guard let template = template else {
+            throw DocumentError.invalidTemplate
+        }
+        
+        do {
+            let pdfDocument = try await PDFGenerationService.shared.generateCoverLetter(
+                userProfile: userProfile,
+                template: template,
+                content: content
+            )
+            
+            guard let data = pdfDocument.dataRepresentation() else {
+                throw DocumentError.exportFailed("Failed to convert PDF to data")
+            }
+            
+            return data
+        } catch {
+            throw DocumentError.exportFailed(error.localizedDescription)
+        }
     }
     
     func getPreviewImage() async -> Data? {

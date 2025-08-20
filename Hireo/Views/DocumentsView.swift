@@ -112,74 +112,288 @@ struct EmptyDocumentsView: View {
 struct CVDocumentRowView: View {
     let document: CVDocument
     @EnvironmentObject private var dataManager: DataManager
+    @State private var showingDocumentDetail = false
+    @State private var showingPDFPreview = false
+    @State private var generatedPDFData: Data?
+    @State private var isExporting = false
+    @State private var errorMessage: String?
+    @State private var showingError = false
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(document.fileName)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                if let template = dataManager.getCVTemplate(by: document.templateId) {
-                    Text(template.name)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+        Button(action: {
+            showingDocumentDetail = true
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(document.fileName)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    HStack {
+                        if let template = dataManager.getCVTemplate(by: document.templateId) {
+                            Text(template.name)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        // Color scheme indicator
+                        Circle()
+                            .fill(Color(hex: document.colorScheme.primaryColor))
+                            .frame(width: 12, height: 12)
+                    }
+                    
+                    HStack {
+                        Text(document.lastModified.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        if let application = dataManager.applications.first(where: { $0.id == document.applicationId }) {
+                            Spacer()
+                            Text("• \(application.companyName)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
                 }
                 
-                Text(document.lastModified, style: .date)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Spacer()
+                
+                VStack(spacing: 8) {
+                    Button(action: exportPDF) {
+                        HStack(spacing: 4) {
+                            if isExporting {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                        }
+                        .foregroundColor(.blue)
+                        .padding(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isExporting)
+                    
+                    Button(action: previewPDF) {
+                        Image(systemName: "eye")
+                            .foregroundColor(.green)
+                            .padding(8)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            
-            Spacer()
-            
-            Button(action: {
-                // TODO: Export PDF
-            }) {
-                Image(systemName: "square.and.arrow.up")
-                    .foregroundColor(.blue)
-                    .padding(8)
-            }
-            .buttonStyle(.plain)
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingDocumentDetail) {
+            CVDocumentDetailView(document: document)
+        }
+        .sheet(isPresented: $showingPDFPreview) {
+            if let pdfData = generatedPDFData {
+                PDFPreviewView(pdfData: pdfData, title: document.fileName)
+            }
+        }
+        .alert("Error", isPresented: $showingError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage ?? "An unknown error occurred")
+        }
+    }
+    
+    private func exportPDF() {
+        isExporting = true
+        
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                await MainActor.run {
+                    let activityVC = UIActivityViewController(activityItems: [pdfData], applicationActivities: nil)
+                    
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                       let window = windowScene.windows.first,
+                       let rootVC = window.rootViewController {
+                        rootVC.present(activityVC, animated: true)
+                    }
+                    
+                    self.isExporting = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                    self.isExporting = false
+                }
+            }
+        }
+    }
+    
+    private func previewPDF() {
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                await MainActor.run {
+                    self.generatedPDFData = pdfData
+                    self.showingPDFPreview = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                }
+            }
+        }
     }
 }
 
 struct CoverLetterDocumentRowView: View {
     let document: CoverLetterDocument
     @EnvironmentObject private var dataManager: DataManager
+    @State private var showingDocumentDetail = false
+    @State private var showingPDFPreview = false
+    @State private var generatedPDFData: Data?
+    @State private var isExporting = false
+    @State private var errorMessage: String?
+    @State private var showingError = false
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(document.fileName)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                if let template = dataManager.getCoverLetterTemplate(by: document.templateId) {
-                    Text(template.name)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+        Button(action: {
+            showingDocumentDetail = true
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(document.fileName)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    HStack {
+                        if let template = dataManager.getCoverLetterTemplate(by: document.templateId) {
+                            Text(template.name)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        // Color scheme indicator
+                        Circle()
+                            .fill(Color(hex: document.colorScheme.primaryColor))
+                            .frame(width: 12, height: 12)
+                    }
+                    
+                    HStack {
+                        Text(document.lastModified.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        if let application = dataManager.applications.first(where: { $0.id == document.applicationId }) {
+                            Spacer()
+                            Text("• \(application.companyName)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        } else if !document.content.recipientCompany.isEmpty {
+                            Spacer()
+                            Text("• \(document.content.recipientCompany)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
                 }
                 
-                Text(document.lastModified, style: .date)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Spacer()
+                
+                VStack(spacing: 8) {
+                    Button(action: exportPDF) {
+                        HStack(spacing: 4) {
+                            if isExporting {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                        }
+                        .foregroundColor(.blue)
+                        .padding(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isExporting)
+                    
+                    Button(action: previewPDF) {
+                        Image(systemName: "eye")
+                            .foregroundColor(.green)
+                            .padding(8)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            
-            Spacer()
-            
-            Button(action: {
-                // TODO: Export PDF
-            }) {
-                Image(systemName: "square.and.arrow.up")
-                    .foregroundColor(.blue)
-                    .padding(8)
-            }
-            .buttonStyle(.plain)
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingDocumentDetail) {
+            CoverLetterDocumentDetailView(document: document)
+        }
+        .sheet(isPresented: $showingPDFPreview) {
+            if let pdfData = generatedPDFData {
+                PDFPreviewView(pdfData: pdfData, title: document.fileName)
+            }
+        }
+        .alert("Error", isPresented: $showingError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage ?? "An unknown error occurred")
+        }
+    }
+    
+    private func exportPDF() {
+        isExporting = true
+        
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                await MainActor.run {
+                    let activityVC = UIActivityViewController(activityItems: [pdfData], applicationActivities: nil)
+                    
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                       let window = windowScene.windows.first,
+                       let rootVC = window.rootViewController {
+                        rootVC.present(activityVC, animated: true)
+                    }
+                    
+                    self.isExporting = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                    self.isExporting = false
+                }
+            }
+        }
+    }
+    
+    private func previewPDF() {
+        Task {
+            do {
+                let pdfData = try await document.generatePDF()
+                
+                await MainActor.run {
+                    self.generatedPDFData = pdfData
+                    self.showingPDFPreview = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                }
+            }
+        }
     }
 }
 

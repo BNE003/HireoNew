@@ -21,11 +21,7 @@ struct ModernApplicationsView: View {
 // MARK: - Modern Templates View
 struct ModernTemplatesView: View {
     var body: some View {
-        NavigationStack {
-            Text("Modern Templates View - Coming Soon")
-                .font(ModernTheme.Typography.headingMedium)
-                .navigationTitle("Templates")
-        }
+        TemplatesView()
     }
 }
 
@@ -70,3 +66,4 @@ struct ModernProfileEditView: View {
         }
     }
 }
+
