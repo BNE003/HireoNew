@@ -124,6 +124,7 @@ class DataManager: ObservableObject {
             CVTemplate(id: "modern", name: "Modern", description: "Clean and contemporary design", category: .modern),
             CVTemplate(id: "classic", name: "Classic", description: "Traditional professional layout", category: .classic),
             CVTemplate(id: "creative", name: "Creative", description: "Bold and eye-catching design", category: .creative),
+            CVTemplate(id: "professional", name: "Professional", description: "Elegant two-column layout with modern styling", category: .professional),
             CVTemplate(id: "minimal", name: "Minimal", description: "Simple and focused layout", category: .minimal)
         ]
         
