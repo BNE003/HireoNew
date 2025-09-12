@@ -115,32 +115,31 @@ struct CVTemplateCustomizationView: View {
                     .onMove(perform: moveSections)
                 }
                 
-                // Preview Section
+                // Generate Section
                 Section {
-                    VStack(spacing: 16) {
-                        Button(action: generatePreview) {
-                            HStack {
-                                if isGeneratingPreview {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "eye")
-                                }
-                                Text("Preview CV")
+                    Button(action: generateCV) {
+                        HStack {
+                            if isGeneratingPreview {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "arrow.down.doc.fill")
+                                    .font(.system(size: 16, weight: .semibold))
                             }
+                            Text(isGeneratingPreview ? "Generating..." : "Generate CV")
+                                .font(.headline)
+                                .fontWeight(.semibold)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isGeneratingPreview || dataManager.userProfile == nil)
-                        
-                        Button(action: createCVDocument) {
-                            HStack {
-                                Image(systemName: "plus.circle")
-                                Text("Create CV Document")
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(dataManager.userProfile == nil)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .buttonStyle(.plain)
+                    .disabled(isGeneratingPreview || dataManager.userProfile == nil)
+                    .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16))
                 }
                 
                 if dataManager.userProfile == nil {
@@ -244,6 +243,49 @@ struct CVTemplateCustomizationView: View {
                     self.generatedPDFData = pdfData
                     self.showingPDFPreview = true
                     self.isGeneratingPreview = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                    self.isGeneratingPreview = false
+                }
+            }
+        }
+    }
+    
+    private func generateCV() {
+        guard let userProfile = dataManager.userProfile else { return }
+        
+        isGeneratingPreview = true
+        updateCustomSettings()
+        
+        Task {
+            do {
+                let pdfDocument = try await PDFGenerationService.shared.generateCV(
+                    userProfile: userProfile,
+                    template: template,
+                    customSettings: customSettings
+                )
+                
+                guard let pdfData = pdfDocument.dataRepresentation() else {
+                    throw PDFGenerationError.renderingFailed("Failed to get PDF data")
+                }
+                
+                await MainActor.run {
+                    self.generatedPDFData = pdfData
+                    self.showingPDFPreview = true
+                    self.isGeneratingPreview = false
+                    
+                    // Also save the document
+                    var cvDocument = CVDocument(
+                        userProfileId: userProfile.id,
+                        templateId: template.id
+                    )
+                    cvDocument.colorScheme = selectedColorScheme
+                    cvDocument.fontFamily = selectedFontFamily
+                    cvDocument.customSettings = customSettings
+                    dataManager.saveCVDocument(cvDocument)
                 }
             } catch {
                 await MainActor.run {

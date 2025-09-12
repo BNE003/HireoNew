@@ -108,19 +108,19 @@ struct CVTemplateThumbnail: View {
                 if isGeneratingThumbnail {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray6))
-                        .frame(height: 160)
+                        .frame(height: 220)
                         .overlay(
                             ProgressView()
                                 .scaleEffect(0.8)
                         )
                 } else if let thumbnailData = thumbnailPDFData {
                     PDFThumbnailView(pdfData: thumbnailData)
-                        .frame(height: 160)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .frame(height: 220)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray6))
-                        .frame(height: 160)
+                        .frame(height: 220)
                         .overlay(
                             Image(systemName: "doc.text")
                                 .font(.system(size: 30))
@@ -177,19 +177,19 @@ struct CoverLetterTemplateThumbnail: View {
                 if isGeneratingThumbnail {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray6))
-                        .frame(height: 160)
+                        .frame(height: 220)
                         .overlay(
                             ProgressView()
                                 .scaleEffect(0.8)
                         )
                 } else if let thumbnailData = thumbnailPDFData {
                     PDFThumbnailView(pdfData: thumbnailData)
-                        .frame(height: 160)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .frame(height: 220)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray6))
-                        .frame(height: 160)
+                        .frame(height: 220)
                         .overlay(
                             Image(systemName: "envelope")
                                 .font(.system(size: 30))
@@ -242,102 +242,115 @@ struct CVTemplateDetailView: View {
     @EnvironmentObject private var dataManager: DataManager
     let template: CVTemplate
     @State private var showingTemplateCustomization = false
-    @State private var isGeneratingPreview = false
+    @State private var isGenerating = false
     @State private var previewPDFData: Data?
     @State private var errorMessage: String?
     @State private var showingError = false
+    @State private var showingPDFPreview = false
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Large Preview
-                if let previewData = previewPDFData {
-                    PDFPreviewContainer(pdfData: previewData)
-                        .frame(maxHeight: .infinity)
-                } else if isGeneratingPreview {
-                    VStack {
-                        Spacer()
-                        ProgressView("Generating Preview...")
-                        Spacer()
-                    }
-                } else {
-                    VStack {
-                        Spacer()
-                        Image(systemName: "doc.text")
-                            .font(.system(size: 60))
-                            .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
-                        Text("Tap Generate to see preview")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                }
-                
-                // Template Info & Generate Button
-                VStack(spacing: 16) {
-                    VStack(spacing: 8) {
-                        Text(template.name)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        Text(template.category.localizedString)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        if !template.description.isEmpty {
-                            Text(template.description)
-                                .font(.body)
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.secondary)
-                        }
+            GeometryReader { geometry in
+                VStack(spacing: 0) {
+                    // Large Preview
+                    if let previewData = previewPDFData {
+                        PDFPreviewContainer(pdfData: previewData)
+                            .frame(height: geometry.size.height * 0.6)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .padding(.horizontal, 20)
+                    } else {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemGray6))
+                            .frame(height: geometry.size.height * 0.6)
+                            .overlay(
+                                VStack(spacing: 16) {
+                                    Image(systemName: "doc.text")
+                                        .font(.system(size: 60, weight: .light))
+                                        .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                                    
+                                    Text(template.name)
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text(template.description)
+                                        .font(.body)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 40)
+                                }
+                            )
+                            .padding(.horizontal, 20)
                     }
                     
-                    VStack(spacing: 12) {
-                        Button(action: generatePreview) {
+                    Spacer()
+                    
+                    // Action Buttons
+                    VStack(spacing: 16) {
+                        Button(action: generateCV) {
                             HStack {
-                                if isGeneratingPreview {
+                                if isGenerating {
                                     ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
                                 } else {
-                                    Image(systemName: "eye")
+                                    Image(systemName: "arrow.down.doc.fill")
+                                        .font(.system(size: 16, weight: .semibold))
                                 }
-                                Text(isGeneratingPreview ? "Generating..." : "Generate Preview")
+                                Text(isGenerating ? "Generating..." : "Generate CV")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .buttonStyle(.bordered)
-                        .disabled(isGeneratingPreview || dataManager.userProfile == nil)
+                        .disabled(isGenerating || dataManager.userProfile == nil)
                         
-                        Button("Use This Template") {
+                        Button("Customize Template") {
                             showingTemplateCustomization = true
                         }
-                        .buttonStyle(.borderedProminent)
+                        .font(.headline)
+                        .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color(.systemGray5))
+                        .foregroundColor(.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                         .disabled(dataManager.userProfile == nil)
                         
                         if dataManager.userProfile == nil {
-                            Text("Complete your profile first to use templates")
-                                .font(.caption)
+                            Text("Complete your profile first")
+                                .font(.subheadline)
                                 .foregroundColor(.orange)
-                                .multilineTextAlignment(.center)
+                                .padding(.top, 8)
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding()
-                .background(Color(.systemGray6))
             }
-            .navigationTitle("Template Preview")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }
+                    .font(.headline)
+                    .fontWeight(.medium)
                 }
             }
         }
         .sheet(isPresented: $showingTemplateCustomization) {
             CVTemplateCustomizationView(template: template)
+        }
+        .sheet(isPresented: $showingPDFPreview) {
+            if let pdfData = previewPDFData {
+                PDFPreviewView(pdfData: pdfData, title: "\(template.name) CV")
+            }
         }
         .alert("Error", isPresented: $showingError) {
             Button("OK") { }
@@ -345,16 +358,36 @@ struct CVTemplateDetailView: View {
             Text(errorMessage ?? "An unknown error occurred")
         }
         .onAppear {
-            if dataManager.userProfile != nil {
-                generatePreview()
-            }
+            generatePreview()
         }
     }
     
     private func generatePreview() {
         let userProfile = dataManager.userProfile ?? createDummyUserProfile()
         
-        isGeneratingPreview = true
+        Task {
+            do {
+                let pdfDocument = try await PDFGenerationService.shared.generateCV(
+                    userProfile: userProfile,
+                    template: template,
+                    customSettings: CVSettings()
+                )
+                
+                guard let pdfData = pdfDocument.dataRepresentation() else { return }
+                
+                await MainActor.run {
+                    self.previewPDFData = pdfData
+                }
+            } catch {
+                // Preview generation failed, but continue without preview
+            }
+        }
+    }
+    
+    private func generateCV() {
+        guard let userProfile = dataManager.userProfile else { return }
+        
+        isGenerating = true
         
         Task {
             do {
@@ -370,13 +403,14 @@ struct CVTemplateDetailView: View {
                 
                 await MainActor.run {
                     self.previewPDFData = pdfData
-                    self.isGeneratingPreview = false
+                    self.showingPDFPreview = true
+                    self.isGenerating = false
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.showingError = true
-                    self.isGeneratingPreview = false
+                    self.isGenerating = false
                 }
             }
         }
@@ -388,102 +422,115 @@ struct CoverLetterTemplateDetailView: View {
     @EnvironmentObject private var dataManager: DataManager
     let template: CoverLetterTemplate
     @State private var showingTemplateCustomization = false
-    @State private var isGeneratingPreview = false
+    @State private var isGenerating = false
     @State private var previewPDFData: Data?
     @State private var errorMessage: String?
     @State private var showingError = false
+    @State private var showingPDFPreview = false
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Large Preview
-                if let previewData = previewPDFData {
-                    PDFPreviewContainer(pdfData: previewData)
-                        .frame(maxHeight: .infinity)
-                } else if isGeneratingPreview {
-                    VStack {
-                        Spacer()
-                        ProgressView("Generating Preview...")
-                        Spacer()
-                    }
-                } else {
-                    VStack {
-                        Spacer()
-                        Image(systemName: "envelope")
-                            .font(.system(size: 60))
-                            .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
-                        Text("Tap Generate to see preview")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                }
-                
-                // Template Info & Generate Button
-                VStack(spacing: 16) {
-                    VStack(spacing: 8) {
-                        Text(template.name)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        Text(template.category.localizedString)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        if !template.description.isEmpty {
-                            Text(template.description)
-                                .font(.body)
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.secondary)
-                        }
+            GeometryReader { geometry in
+                VStack(spacing: 0) {
+                    // Large Preview
+                    if let previewData = previewPDFData {
+                        PDFPreviewContainer(pdfData: previewData)
+                            .frame(height: geometry.size.height * 0.6)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .padding(.horizontal, 20)
+                    } else {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemGray6))
+                            .frame(height: geometry.size.height * 0.6)
+                            .overlay(
+                                VStack(spacing: 16) {
+                                    Image(systemName: "envelope")
+                                        .font(.system(size: 60, weight: .light))
+                                        .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                                    
+                                    Text(template.name)
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text(template.description)
+                                        .font(.body)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 40)
+                                }
+                            )
+                            .padding(.horizontal, 20)
                     }
                     
-                    VStack(spacing: 12) {
-                        Button(action: generatePreview) {
+                    Spacer()
+                    
+                    // Action Buttons
+                    VStack(spacing: 16) {
+                        Button(action: generateCoverLetter) {
                             HStack {
-                                if isGeneratingPreview {
+                                if isGenerating {
                                     ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
                                 } else {
-                                    Image(systemName: "eye")
+                                    Image(systemName: "arrow.down.doc.fill")
+                                        .font(.system(size: 16, weight: .semibold))
                                 }
-                                Text(isGeneratingPreview ? "Generating..." : "Generate Preview")
+                                Text(isGenerating ? "Generating..." : "Generate Cover Letter")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .buttonStyle(.bordered)
-                        .disabled(isGeneratingPreview || dataManager.userProfile == nil)
+                        .disabled(isGenerating || dataManager.userProfile == nil)
                         
-                        Button("Use This Template") {
+                        Button("Customize Template") {
                             showingTemplateCustomization = true
                         }
-                        .buttonStyle(.borderedProminent)
+                        .font(.headline)
+                        .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color(.systemGray5))
+                        .foregroundColor(.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                         .disabled(dataManager.userProfile == nil)
                         
                         if dataManager.userProfile == nil {
-                            Text("Complete your profile first to use templates")
-                                .font(.caption)
+                            Text("Complete your profile first")
+                                .font(.subheadline)
                                 .foregroundColor(.orange)
-                                .multilineTextAlignment(.center)
+                                .padding(.top, 8)
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding()
-                .background(Color(.systemGray6))
             }
-            .navigationTitle("Template Preview")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }
+                    .font(.headline)
+                    .fontWeight(.medium)
                 }
             }
         }
         .sheet(isPresented: $showingTemplateCustomization) {
             CoverLetterTemplateCustomizationView(template: template)
+        }
+        .sheet(isPresented: $showingPDFPreview) {
+            if let pdfData = previewPDFData {
+                PDFPreviewView(pdfData: pdfData, title: "\(template.name) Cover Letter")
+            }
         }
         .alert("Error", isPresented: $showingError) {
             Button("OK") { }
@@ -491,16 +538,38 @@ struct CoverLetterTemplateDetailView: View {
             Text(errorMessage ?? "An unknown error occurred")
         }
         .onAppear {
-            if dataManager.userProfile != nil {
-                generatePreview()
-            }
+            generatePreview()
         }
     }
     
     private func generatePreview() {
         let userProfile = dataManager.userProfile ?? createDummyUserProfile()
         
-        isGeneratingPreview = true
+        Task {
+            do {
+                let sampleContent = CoverLetterContent()
+                
+                let pdfDocument = try await PDFGenerationService.shared.generateCoverLetter(
+                    userProfile: userProfile,
+                    template: template,
+                    content: sampleContent
+                )
+                
+                guard let pdfData = pdfDocument.dataRepresentation() else { return }
+                
+                await MainActor.run {
+                    self.previewPDFData = pdfData
+                }
+            } catch {
+                // Preview generation failed, but continue without preview
+            }
+        }
+    }
+    
+    private func generateCoverLetter() {
+        guard let userProfile = dataManager.userProfile else { return }
+        
+        isGenerating = true
         
         Task {
             do {
@@ -518,13 +587,14 @@ struct CoverLetterTemplateDetailView: View {
                 
                 await MainActor.run {
                     self.previewPDFData = pdfData
-                    self.isGeneratingPreview = false
+                    self.showingPDFPreview = true
+                    self.isGenerating = false
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.showingError = true
-                    self.isGeneratingPreview = false
+                    self.isGenerating = false
                 }
             }
         }

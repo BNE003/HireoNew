@@ -156,32 +156,31 @@ struct CoverLetterTemplateCustomizationView: View {
                     }
                 }
                 
-                // Actions Section
+                // Generate Section
                 Section {
-                    VStack(spacing: 16) {
-                        Button(action: generatePreview) {
-                            HStack {
-                                if isGeneratingPreview {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "eye")
-                                }
-                                Text("Preview Cover Letter")
+                    Button(action: generateCoverLetter) {
+                        HStack {
+                            if isGeneratingPreview {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "arrow.down.doc.fill")
+                                    .font(.system(size: 16, weight: .semibold))
                             }
+                            Text(isGeneratingPreview ? "Generating..." : "Generate Cover Letter")
+                                .font(.headline)
+                                .fontWeight(.semibold)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isGeneratingPreview || dataManager.userProfile == nil)
-                        
-                        Button(action: createCoverLetterDocument) {
-                            HStack {
-                                Image(systemName: "plus.circle")
-                                Text("Create Cover Letter Document")
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(dataManager.userProfile == nil)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .buttonStyle(.plain)
+                    .disabled(isGeneratingPreview || dataManager.userProfile == nil)
+                    .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16))
                 }
                 
                 if dataManager.userProfile == nil {
@@ -275,6 +274,53 @@ struct CoverLetterTemplateCustomizationView: View {
                     self.generatedPDFData = pdfData
                     self.showingPDFPreview = true
                     self.isGeneratingPreview = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.showingError = true
+                    self.isGeneratingPreview = false
+                }
+            }
+        }
+    }
+    
+    private func generateCoverLetter() {
+        guard let userProfile = dataManager.userProfile else { return }
+        
+        isGeneratingPreview = true
+        
+        Task {
+            do {
+                let pdfDocument = try await PDFGenerationService.shared.generateCoverLetter(
+                    userProfile: userProfile,
+                    template: template,
+                    content: content
+                )
+                
+                guard let pdfData = pdfDocument.dataRepresentation() else {
+                    throw PDFGenerationError.renderingFailed("Failed to get PDF data")
+                }
+                
+                await MainActor.run {
+                    self.generatedPDFData = pdfData
+                    self.showingPDFPreview = true
+                    self.isGeneratingPreview = false
+                    
+                    // Also save the document
+                    var coverLetterDocument = CoverLetterDocument(
+                        userProfileId: userProfile.id,
+                        templateId: template.id
+                    )
+                    coverLetterDocument.colorScheme = selectedColorScheme
+                    coverLetterDocument.fontFamily = selectedFontFamily
+                    coverLetterDocument.content = content
+                    
+                    // Generate a meaningful filename
+                    let companyName = content.recipientCompany.isEmpty ? "Company" : content.recipientCompany
+                    coverLetterDocument.fileName = "CoverLetter_\(companyName)_\(Date().formatted(.dateTime.year().month().day()))"
+                    
+                    dataManager.saveCoverLetterDocument(coverLetterDocument)
                 }
             } catch {
                 await MainActor.run {
