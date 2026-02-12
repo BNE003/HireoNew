@@ -31,22 +31,10 @@ struct MainTabView: View {
                     Text(NSLocalizedString("profile", comment: ""))
                 }
             
-            ModernApplicationsView()
-                .tabItem {
-                    Image(systemName: "folder.fill")
-                    Text(NSLocalizedString("applications", comment: ""))
-                }
-            
             ModernTemplatesView()
                 .tabItem {
-                    Image(systemName: "doc.badge.plus")
+                    Image(systemName: "plus.circle.fill")
                     Text(NSLocalizedString("templates", comment: ""))
-                }
-            
-            ModernDocumentsView()
-                .tabItem {
-                    Image(systemName: "doc.on.doc.fill")
-                    Text(NSLocalizedString("documents", comment: ""))
                 }
             
             ModernSettingsView()

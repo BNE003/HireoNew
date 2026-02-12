@@ -1847,6 +1847,7 @@ class ModernTemplatePDFRenderer {
     private var isModernOceanTemplate: Bool { template.id == "modern_ocean" }
     private var isModernAquaTemplate: Bool { template.id == "modern_aqua" }
     private var isModernEdgeTemplate: Bool { template.id == "modern_edge" }
+    private var isModernGridTemplate: Bool { template.id == "modern_grid" }
     
     // Colors and accents for modern template variants
     private var sidebarColor: UIColor {
@@ -1898,13 +1899,50 @@ class ModernTemplatePDFRenderer {
     
     // Modern font creation with fallbacks for maximum compatibility
     private static func createModernFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
-        // Try modern fonts in order of preference
+        let weightedCandidates: [String]
+        switch weight {
+        case .bold, .heavy, .black:
+            weightedCandidates = [
+                "SpaceGrotesk-Bold",
+                "Inter-Bold",
+                "Manrope-Bold",
+                "AvenirNext-Bold",
+                "Avenir-Heavy",
+                "HelveticaNeue-Bold"
+            ]
+        case .semibold, .medium:
+            weightedCandidates = [
+                "SpaceGrotesk-SemiBold",
+                "Inter-SemiBold",
+                "Manrope-SemiBold",
+                "AvenirNext-DemiBold",
+                "Avenir-Medium",
+                "HelveticaNeue-Medium"
+            ]
+        default:
+            weightedCandidates = [
+                "SpaceGrotesk-Regular",
+                "Inter-Regular",
+                "Manrope-Regular",
+                "AvenirNext-Regular",
+                "Avenir-Book",
+                "HelveticaNeue"
+            ]
+        }
+
+        for candidate in weightedCandidates {
+            if let font = UIFont(name: candidate, size: size) {
+                return font
+            }
+        }
+
+        // Try modern font families in order of preference.
         let modernFontNames = [
-            "AvenirNext", // Contemporary, highly readable
-            "Helvetica Neue", // Clean and modern
-            "Avenir", // Excellent readability
-            "SF Pro Display", // Apple's modern system font
-            "SF Pro Text" // Apple's text optimized font
+            "AvenirNext",
+            "HelveticaNeue",
+            "Avenir",
+            "SFProDisplay",
+            "SFProText"
         ]
         
         // Map weight to font name suffix for custom fonts
@@ -1922,13 +1960,13 @@ class ModernTemplatePDFRenderer {
         default: weightSuffix = "-Regular"
         }
         
-        // Try each modern font
+        // Try each modern family name with a matching suffix.
         for fontName in modernFontNames {
             let fullFontName = fontName + weightSuffix
             if let font = UIFont(name: fullFontName, size: size) {
                 return font
             }
-            // Try without weight suffix (for system fonts)
+            // Try without suffix.
             if let font = UIFont(name: fontName, size: size) {
                 return font
             }
@@ -1972,6 +2010,11 @@ class ModernTemplatePDFRenderer {
     }
     
     private func drawModernTemplate() {
+        if isModernGridTemplate {
+            drawModernGridTemplate()
+            return
+        }
+
         if isModernOceanTemplate {
             drawModernOceanTemplate()
             return
@@ -2488,6 +2531,501 @@ class ModernTemplatePDFRenderer {
                 }
             }
         }
+    }
+
+    private func drawModernGridTemplate() {
+        UIColor.white.setFill()
+        UIBezierPath(rect: CGRect(origin: .zero, size: pageSize)).fill()
+
+        let outerMargin: CGFloat = 24
+        let frameRect = CGRect(
+            x: outerMargin,
+            y: outerMargin,
+            width: pageSize.width - (outerMargin * 2),
+            height: pageSize.height - (outerMargin * 2)
+        )
+
+        let topPanelHeight: CGFloat = 246
+        let topPanelRect = CGRect(
+            x: frameRect.minX,
+            y: frameRect.minY,
+            width: frameRect.width,
+            height: topPanelHeight
+        )
+
+        UIColor(hex: "#EBE9F1").setFill()
+        UIBezierPath(rect: topPanelRect).fill()
+
+        let headerRect = CGRect(
+            x: topPanelRect.minX + 16,
+            y: topPanelRect.minY + 16,
+            width: topPanelRect.width - 32,
+            height: 132
+        )
+
+        UIColor(hex: "#212121").setStroke()
+        let headerBorder = UIBezierPath(rect: headerRect)
+        headerBorder.lineWidth = 1
+        headerBorder.stroke()
+
+        let nameColumnWidth: CGFloat = 155
+        let nameRect = CGRect(
+            x: headerRect.minX,
+            y: headerRect.minY,
+            width: nameColumnWidth,
+            height: headerRect.height
+        )
+        let titleRowHeight: CGFloat = 38
+
+        let verticalDivider = UIBezierPath()
+        verticalDivider.move(to: CGPoint(x: nameRect.maxX, y: headerRect.minY))
+        verticalDivider.addLine(to: CGPoint(x: nameRect.maxX, y: headerRect.maxY))
+        verticalDivider.lineWidth = 1
+        verticalDivider.stroke()
+
+        let horizontalDivider = UIBezierPath()
+        horizontalDivider.move(to: CGPoint(x: nameRect.minX, y: nameRect.maxY - titleRowHeight))
+        horizontalDivider.addLine(to: CGPoint(x: nameRect.maxX, y: nameRect.maxY - titleRowHeight))
+        horizontalDivider.lineWidth = 1
+        horizontalDivider.stroke()
+
+        let firstName = userProfile.personalInfo.firstName.isEmpty ? "Adam" : userProfile.personalInfo.firstName
+        let lastName = userProfile.personalInfo.lastName.isEmpty ? "Hickson" : userProfile.personalInfo.lastName
+        let role = userProfile.personalInfo.title.isEmpty ? "Game Developer" : userProfile.personalInfo.title
+        let summary = userProfile.personalInfo.summary.isEmpty
+            ? "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s."
+            : userProfile.personalInfo.summary
+
+        _ = drawMultilineText(
+            "\(firstName)\n\(lastName)",
+            at: CGPoint(x: nameRect.minX + 10, y: nameRect.minY + 11),
+            font: ModernTemplatePDFRenderer.createModernFont(size: 28, weight: .bold),
+            color: UIColor(hex: "#050505"),
+            maxWidth: nameRect.width - 20,
+            lineSpacing: 3
+        )
+
+        _ = drawText(
+            role,
+            at: CGPoint(x: nameRect.minX + 10, y: nameRect.maxY - titleRowHeight + 10),
+            font: ModernTemplatePDFRenderer.createModernFont(size: 13.5, weight: .bold),
+            color: UIColor(hex: "#101010")
+        )
+
+        if includesSection(.summary) {
+            _ = drawMultilineText(
+                summary,
+                at: CGPoint(x: nameRect.maxX + 12, y: headerRect.minY + 10),
+                font: ModernTemplatePDFRenderer.createModernFont(size: 10.7, weight: .medium),
+                color: UIColor(hex: "#2B2B2B"),
+                maxWidth: headerRect.maxX - nameRect.maxX - 22,
+                lineSpacing: 2
+            )
+        }
+
+        if includesSection(.personalInfo) {
+            let contactRect = CGRect(
+                x: headerRect.minX,
+                y: headerRect.maxY + 12,
+                width: headerRect.width,
+                height: 52
+            )
+
+            let contactBorder = UIBezierPath(rect: contactRect)
+            contactBorder.lineWidth = 1
+            contactBorder.stroke()
+
+            let contactItems = [
+                ("PHONE", userProfile.personalInfo.phone.isEmpty ? "+123 4567 89 53" : userProfile.personalInfo.phone),
+                ("EMAIL", userProfile.personalInfo.email.isEmpty ? "yourname@gmail.com" : userProfile.personalInfo.email),
+                ("ADRESS", modernGridAddress()),
+                ("WEBSITE", modernGridWebsite())
+            ]
+
+            let cellWidth = contactRect.width / CGFloat(contactItems.count)
+            for index in 0..<contactItems.count {
+                if index > 0 {
+                    let dividerX = contactRect.minX + (CGFloat(index) * cellWidth)
+                    let contactDivider = UIBezierPath()
+                    contactDivider.move(to: CGPoint(x: dividerX, y: contactRect.minY))
+                    contactDivider.addLine(to: CGPoint(x: dividerX, y: contactRect.maxY))
+                    contactDivider.lineWidth = 1
+                    contactDivider.stroke()
+                }
+
+                let cellRect = CGRect(
+                    x: contactRect.minX + (CGFloat(index) * cellWidth),
+                    y: contactRect.minY,
+                    width: cellWidth,
+                    height: contactRect.height
+                )
+
+                drawModernGridContactCell(
+                    title: contactItems[index].0,
+                    value: contactItems[index].1,
+                    in: cellRect,
+                    labelFont: ModernTemplatePDFRenderer.createModernFont(size: 9.2, weight: .bold),
+                    valueFont: ModernTemplatePDFRenderer.createModernFont(size: 8.7, weight: .medium)
+                )
+            }
+        }
+
+        let contentTop = topPanelRect.maxY + 18
+        let contentX = frameRect.minX + 16
+        let contentWidth = frameRect.width - 32
+        let leftColumnWidth: CGFloat = 170
+        let columnGap: CGFloat = 26
+        let rightColumnX = contentX + leftColumnWidth + columnGap
+        let rightColumnWidth = contentWidth - leftColumnWidth - columnGap
+        let contentBottom = frameRect.maxY - 16
+
+        var leftY = contentTop
+        if includesSection(.education) {
+            leftY = drawModernGridEducationSection(
+                at: CGPoint(x: contentX, y: leftY),
+                maxWidth: leftColumnWidth,
+                maxY: contentBottom
+            )
+            leftY += 14
+        }
+
+        if includesSection(.skills) {
+            if includesSection(.education) {
+                UIColor(hex: "#222222").setStroke()
+                let separator = UIBezierPath()
+                separator.move(to: CGPoint(x: contentX, y: leftY))
+                separator.addLine(to: CGPoint(x: contentX + leftColumnWidth, y: leftY))
+                separator.lineWidth = 1
+                separator.stroke()
+                leftY += 14
+            }
+
+            _ = drawModernGridSkillsSection(
+                at: CGPoint(x: contentX, y: leftY),
+                maxWidth: leftColumnWidth,
+                maxY: contentBottom
+            )
+        }
+
+        if includesSection(.workExperience) {
+            _ = drawModernGridExperienceSection(
+                at: CGPoint(x: rightColumnX, y: contentTop),
+                maxWidth: rightColumnWidth,
+                maxY: contentBottom
+            )
+        }
+    }
+
+    private func drawModernGridContactCell(
+        title: String,
+        value: String,
+        in rect: CGRect,
+        labelFont: UIFont,
+        valueFont: UIFont
+    ) {
+        _ = drawText(
+            title,
+            at: CGPoint(x: rect.minX + 10, y: rect.minY + 8),
+            font: labelFont,
+            color: UIColor(hex: "#181818")
+        )
+
+        _ = drawMultilineText(
+            value,
+            at: CGPoint(x: rect.minX + 10, y: rect.minY + 24),
+            font: valueFont,
+            color: UIColor(hex: "#252525"),
+            maxWidth: rect.width - 16,
+            lineSpacing: 1
+        )
+    }
+
+    private func drawModernGridEducationSection(at point: CGPoint, maxWidth: CGFloat, maxY: CGFloat) -> CGFloat {
+        var currentY = point.y
+        let headingFont = ModernTemplatePDFRenderer.createModernFont(size: 18, weight: .bold)
+        let degreeFont = ModernTemplatePDFRenderer.createModernFont(size: 11.6, weight: .bold)
+        let metaFont = ModernTemplatePDFRenderer.createModernFont(size: 10.4, weight: .medium)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 9.8, weight: .regular)
+
+        _ = drawText("EDUCATION", at: CGPoint(x: point.x, y: currentY), font: headingFont, color: UIColor(hex: "#151515"))
+        currentY += headingFont.lineHeight + 8
+
+        for entry in modernGridEducationItems() {
+            if currentY > maxY - 80 {
+                break
+            }
+
+            _ = drawMultilineText(
+                entry.title,
+                at: CGPoint(x: point.x, y: currentY),
+                font: degreeFont,
+                color: UIColor(hex: "#111111"),
+                maxWidth: maxWidth,
+                lineSpacing: 1
+            )
+            currentY += degreeFont.lineHeight + 2
+
+            _ = drawText(entry.institution, at: CGPoint(x: point.x, y: currentY), font: metaFont, color: UIColor(hex: "#444444"))
+            currentY += metaFont.lineHeight + 1
+            _ = drawText(entry.period, at: CGPoint(x: point.x, y: currentY), font: metaFont, color: UIColor(hex: "#1D1D1D"))
+            currentY += metaFont.lineHeight + 5
+
+            currentY += drawMultilineText(
+                entry.summary,
+                at: CGPoint(x: point.x, y: currentY),
+                font: bodyFont,
+                color: UIColor(hex: "#4C4C4C"),
+                maxWidth: maxWidth,
+                lineSpacing: 2
+            )
+            currentY += 13
+        }
+
+        return currentY
+    }
+
+    private func drawModernGridExperienceSection(at point: CGPoint, maxWidth: CGFloat, maxY: CGFloat) -> CGFloat {
+        var currentY = point.y
+        let headingFont = ModernTemplatePDFRenderer.createModernFont(size: 18, weight: .bold)
+        let titleFont = ModernTemplatePDFRenderer.createModernFont(size: 11.6, weight: .bold)
+        let companyFont = ModernTemplatePDFRenderer.createModernFont(size: 11.4, weight: .bold)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 9.9, weight: .regular)
+
+        _ = drawText("EXPERIENCE", at: CGPoint(x: point.x, y: currentY), font: headingFont, color: UIColor(hex: "#151515"))
+        currentY += headingFont.lineHeight + 10
+
+        for entry in modernGridExperienceItems() {
+            if currentY > maxY - 90 {
+                break
+            }
+
+            let rightWidth = maxWidth * 0.42
+            let leftWidth = maxWidth - rightWidth - 8
+
+            let leftHeight = drawMultilineText(
+                entry.position,
+                at: CGPoint(x: point.x, y: currentY),
+                font: titleFont,
+                color: UIColor(hex: "#101010"),
+                maxWidth: leftWidth,
+                lineSpacing: 1
+            )
+
+            let rightHeight = drawMultilineText(
+                entry.companyAndPeriod,
+                at: CGPoint(x: point.x + maxWidth - rightWidth, y: currentY),
+                font: companyFont,
+                color: UIColor(hex: "#111111"),
+                maxWidth: rightWidth,
+                lineSpacing: 1
+            )
+
+            currentY += max(leftHeight, rightHeight) + 6
+
+            currentY += drawMultilineText(
+                entry.summary,
+                at: CGPoint(x: point.x, y: currentY),
+                font: bodyFont,
+                color: UIColor(hex: "#3B3B3B"),
+                maxWidth: maxWidth,
+                lineSpacing: 2
+            )
+            currentY += 14
+        }
+
+        return currentY
+    }
+
+    private func drawModernGridSkillsSection(at point: CGPoint, maxWidth: CGFloat, maxY: CGFloat) -> CGFloat {
+        var currentY = point.y
+        let headingFont = ModernTemplatePDFRenderer.createModernFont(size: 18, weight: .bold)
+        let skillFont = ModernTemplatePDFRenderer.createModernFont(size: 11.2, weight: .medium)
+
+        _ = drawText("SKILLS", at: CGPoint(x: point.x, y: currentY), font: headingFont, color: UIColor(hex: "#151515"))
+        currentY += headingFont.lineHeight + 10
+
+        for skill in modernGridSkillItems() {
+            if currentY > maxY - 35 {
+                break
+            }
+
+            _ = drawText(skill.name, at: CGPoint(x: point.x, y: currentY), font: skillFont, color: UIColor(hex: "#171717"))
+            currentY += skillFont.lineHeight + 5
+
+            let lineY = currentY + 1
+            let lineStart = CGPoint(x: point.x, y: lineY)
+            let lineEnd = CGPoint(x: point.x + maxWidth, y: lineY)
+
+            UIColor(hex: "#D4D4D4").setStroke()
+            let baseLine = UIBezierPath()
+            baseLine.move(to: lineStart)
+            baseLine.addLine(to: lineEnd)
+            baseLine.lineWidth = 3
+            baseLine.stroke()
+
+            UIColor(hex: "#111111").setStroke()
+            let progressLine = UIBezierPath()
+            progressLine.move(to: lineStart)
+            let clamped = max(0.12, min(skill.progress, 1.0))
+            let progressX = lineStart.x + (maxWidth * clamped)
+            progressLine.addLine(to: CGPoint(x: progressX, y: lineY))
+            progressLine.lineWidth = 3
+            progressLine.stroke()
+
+            UIColor(hex: "#111111").setFill()
+            UIBezierPath(rect: CGRect(x: progressX - 1.2, y: lineY - 6, width: 2.4, height: 12)).fill()
+
+            currentY += 16
+        }
+
+        return currentY
+    }
+
+    private func modernGridEducationItems() -> [(title: String, institution: String, period: String, summary: String)] {
+        if userProfile.education.isEmpty {
+            return [
+                (
+                    title: "Diploma in Computer Engineering",
+                    institution: "University Name 01",
+                    period: "2010-2012",
+                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry."
+                ),
+                (
+                    title: "Bachelor in Computer Engineering",
+                    institution: "University Name 02",
+                    period: "2012-2016",
+                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry."
+                ),
+                (
+                    title: "Master in Computer Engineering",
+                    institution: "University Name 03",
+                    period: "2016-2018",
+                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry."
+                )
+            ]
+        }
+
+        return Array(userProfile.education.prefix(3)).map { entry in
+            let titleParts = [entry.degree, entry.fieldOfStudy].filter { !$0.isEmpty }
+            let title = titleParts.isEmpty ? "Education" : titleParts.joined(separator: " in ")
+            let institution = entry.institution.isEmpty ? "University" : entry.institution
+            let period = modernGridYearRange(startDate: entry.startDate, endDate: entry.endDate, isCurrent: entry.isCurrentlyStudying)
+            let summary = entry.description.isEmpty
+                ? "Focused academic training with practical coursework and project work."
+                : entry.description
+            return (title: title, institution: institution, period: period, summary: summary)
+        }
+    }
+
+    private func modernGridExperienceItems() -> [(position: String, companyAndPeriod: String, summary: String)] {
+        if userProfile.workExperience.isEmpty {
+            return [
+                (
+                    position: "Sr. Game Developer",
+                    companyAndPeriod: "Apple | 2023-Present",
+                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                ),
+                (
+                    position: "Game Developer",
+                    companyAndPeriod: "Cisco System | 2022-2023",
+                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                ),
+                (
+                    position: "Freelance As A Game Developer",
+                    companyAndPeriod: "Microsoft | 2021-2022",
+                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                ),
+                (
+                    position: "Jr. Game Developer",
+                    companyAndPeriod: "Oracle | 2019-2021",
+                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                )
+            ]
+        }
+
+        return Array(userProfile.workExperience.prefix(4)).map { entry in
+            let position = entry.position.isEmpty ? "Role" : entry.position
+            let company = entry.company.isEmpty ? "Company" : entry.company
+            let period = modernGridYearRange(startDate: entry.startDate, endDate: entry.endDate, isCurrent: entry.isCurrentJob)
+
+            var descriptionText = entry.description
+            if descriptionText.isEmpty {
+                descriptionText = entry.achievements.joined(separator: " ")
+            }
+            if descriptionText.isEmpty {
+                descriptionText = "Delivered measurable outcomes in cross-functional product teams."
+            }
+
+            return (
+                position: position,
+                companyAndPeriod: "\(company) | \(period)",
+                summary: descriptionText
+            )
+        }
+    }
+
+    private func modernGridSkillItems() -> [(name: String, progress: CGFloat)] {
+        let allSkills = userProfile.skills.flatMap { $0.skills }
+        if allSkills.isEmpty {
+            return [
+                ("JavaScript", 0.90),
+                ("Rust", 0.72),
+                ("Lua", 0.56),
+                ("Swift", 0.90)
+            ]
+        }
+
+        return Array(allSkills.prefix(4)).map { skill in
+            let progress: CGFloat
+            switch skill.proficiencyLevel {
+            case .beginner: progress = 0.32
+            case .intermediate: progress = 0.55
+            case .advanced: progress = 0.76
+            case .expert: progress = 0.92
+            }
+            return (skill.name, progress)
+        }
+    }
+
+    private func modernGridAddress() -> String {
+        let address = userProfile.personalInfo.address
+        let cityCountry = [address.city, address.country].filter { !$0.isEmpty }.joined(separator: ", ")
+        if !cityCountry.isEmpty {
+            return cityCountry
+        }
+        return "Washington, USA"
+    }
+
+    private func modernGridWebsite() -> String {
+        if let domainPart = userProfile.personalInfo.email.split(separator: "@").last {
+            let domain = String(domainPart).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !domain.isEmpty {
+                return "www.\(domain)"
+            }
+        }
+
+        let first = userProfile.personalInfo.firstName.lowercased()
+        let last = userProfile.personalInfo.lastName.lowercased()
+        let slug = "\(first)\(last)".replacingOccurrences(of: " ", with: "")
+        if !slug.isEmpty {
+            return "www.\(slug).com"
+        }
+
+        return "www.adamhick.com"
+    }
+
+    private func modernGridYearRange(startDate: Date, endDate: Date?, isCurrent: Bool) -> String {
+        let calendar = Calendar.current
+        let startYear = calendar.component(.year, from: startDate)
+        let endPart: String
+        if isCurrent {
+            endPart = "Present"
+        } else if let endDate {
+            endPart = "\(calendar.component(.year, from: endDate))"
+        } else {
+            endPart = "\(startYear)"
+        }
+        return "\(startYear)-\(endPart)"
     }
     
     private func drawAquaSidebarContent(sidebarWidth: CGFloat) {

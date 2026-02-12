@@ -9,85 +9,393 @@ import SwiftUI
 import PDFKit
 
 
+private enum TemplateSurface: Int, CaseIterable {
+    case cv
+    case coverLetter
+    
+    var title: String {
+        switch self {
+        case .cv:
+            return "Resume"
+        case .coverLetter:
+            return "Cover Letter"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .cv:
+            return "Choose a layout and create a polished CV in minutes."
+        case .coverLetter:
+            return "Create a matching letter with modern formatting."
+        }
+    }
+    
+    var systemImage: String {
+        switch self {
+        case .cv:
+            return "doc.text"
+        case .coverLetter:
+            return "envelope.open"
+        }
+    }
+    
+    var actionTitle: String {
+        switch self {
+        case .cv:
+            return "Create Resume"
+        case .coverLetter:
+            return "Create Letter"
+        }
+    }
+}
+
 struct TemplatesView: View {
     @EnvironmentObject private var dataManager: DataManager
-    @State private var selectedTab = 0
+    @State private var selectedTab: TemplateSurface = .cv
+    @State private var selectedCVTemplate: CVTemplate?
+    @State private var selectedCoverLetterTemplate: CoverLetterTemplate?
+    @State private var showingCVTemplateDetail = false
+    @State private var showingCoverLetterDetail = false
+    @State private var showingCVTemplatePicker = false
+    @State private var showingCoverLetterTemplatePicker = false
+    @State private var animateIn = false
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Picker("Template Type", selection: $selectedTab) {
-                    Text("CV Templates").tag(0)
-                    Text("Cover Letters").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding()
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.09, green: 0.08, blue: 0.24),
+                        Color(red: 0.26, green: 0.24, blue: 0.62),
+                        Color(red: 0.72, green: 0.76, blue: 0.98)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                TabView(selection: $selectedTab) {
-                    CVTemplatesTab()
-                        .tag(0)
-                    
-                    CoverLetterTemplatesTab()
-                        .tag(1)
+                Circle()
+                    .fill(Color.white.opacity(0.2))
+                    .frame(width: 260, height: 260)
+                    .blur(radius: 36)
+                    .offset(x: -140, y: -280)
+                
+                Circle()
+                    .fill(Color(red: 0.76, green: 0.81, blue: 1).opacity(0.55))
+                    .frame(width: 320, height: 320)
+                    .blur(radius: 60)
+                    .offset(x: 170, y: 300)
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        headerSection
+                            .opacity(animateIn ? 1 : 0)
+                            .offset(y: animateIn ? 0 : -18)
+                            .animation(.easeOut(duration: 0.35), value: animateIn)
+                        
+                        typeSwitch
+                            .opacity(animateIn ? 1 : 0)
+                            .offset(y: animateIn ? 0 : 16)
+                            .animation(.easeOut(duration: 0.4).delay(0.08), value: animateIn)
+                        
+                        heroCard
+                            .opacity(animateIn ? 1 : 0)
+                            .offset(y: animateIn ? 0 : 22)
+                            .animation(.spring(response: 0.42, dampingFraction: 0.8).delay(0.14), value: animateIn)
+                        
+                        librarySection
+                            .opacity(animateIn ? 1 : 0)
+                            .offset(y: animateIn ? 0 : 28)
+                            .animation(.easeOut(duration: 0.42).delay(0.2), value: animateIn)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    .padding(.bottom, 40)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .navigationTitle("Templates")
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showingCVTemplateDetail) {
+                if let template = selectedCVTemplate {
+                    CVTemplateDetailView(template: template)
+                }
+            }
+            .sheet(isPresented: $showingCoverLetterDetail) {
+                if let template = selectedCoverLetterTemplate {
+                    CoverLetterTemplateDetailView(template: template)
+                }
+            }
+            .sheet(isPresented: $showingCVTemplatePicker) {
+                CVTemplatePickerSheet { template in
+                    selectedCVTemplate = template
+                    showingCVTemplateDetail = true
+                }
+                .environmentObject(dataManager)
+            }
+            .sheet(isPresented: $showingCoverLetterTemplatePicker) {
+                CoverLetterTemplatePickerSheet { template in
+                    selectedCoverLetterTemplate = template
+                    showingCoverLetterDetail = true
+                }
+                .environmentObject(dataManager)
+            }
+            .onAppear {
+                animateIn = true
+            }
+        }
+    }
+    
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Hello 👋")
+                .font(.system(size: 38, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.92))
+            Text(selectedTab.subtitle)
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.72))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 6)
+    }
+    
+    private var typeSwitch: some View {
+        HStack(spacing: 8) {
+            ForEach(TemplateSurface.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: tab.systemImage)
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(tab.title)
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundStyle(selectedTab == tab ? Color.white : Color.white.opacity(0.78))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        Capsule()
+                            .fill(selectedTab == tab ? Color.white.opacity(0.18) : Color.clear)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(5)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 1))
+    }
+    
+    private var heroCard: some View {
+        Button {
+            openFeaturedTemplate()
+        } label: {
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.9))
+                    .frame(width: 74, height: 74)
+                    .overlay(
+                        Image(systemName: selectedTab.systemImage)
+                            .font(.system(size: 26, weight: .medium))
+                            .foregroundStyle(Color(red: 0.33, green: 0.37, blue: 0.9))
+                    )
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(selectedTab.actionTitle)
+                        .font(.system(size: 28, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(red: 0.18, green: 0.2, blue: 0.33))
+                    Text("with premium templates")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(red: 0.35, green: 0.38, blue: 0.52))
+                }
+                
+                Spacer()
+                
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.39, green: 0.43, blue: 0.94))
+                    .padding(.trailing, 4)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 26)
+                    .fill(Color.white.opacity(0.92))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 26)
+                            .stroke(Color.white.opacity(0.65), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.14), radius: 20, x: 0, y: 10)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var librarySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Library")
+                    .font(.system(size: 35, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.white.opacity(0.95))
+                Spacer()
+                Image(systemName: "sparkles")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.9))
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    if selectedTab == .cv {
+                        if dataManager.cvDocuments.isEmpty {
+                            LibraryEmptyStateCard(
+                                title: "No resumes yet",
+                                subtitle: "Tap Create Resume to generate your first document.",
+                                systemImage: "doc.badge.plus"
+                            )
+                            .frame(width: 240)
+                        } else {
+                            ForEach(dataManager.cvDocuments) { document in
+                                CVDocumentThumbnailView(document: document)
+                                    .frame(width: 176)
+                                    .transition(.opacity.combined(with: .scale))
+                            }
+                        }
+                    } else {
+                        if dataManager.coverLetterDocuments.isEmpty {
+                            LibraryEmptyStateCard(
+                                title: "No letters yet",
+                                subtitle: "Tap Create Letter to generate your first document.",
+                                systemImage: "envelope.badge"
+                            )
+                            .frame(width: 240)
+                        } else {
+                            ForEach(dataManager.coverLetterDocuments) { document in
+                                CoverLetterDocumentThumbnailView(document: document)
+                                    .frame(width: 176)
+                                    .transition(.opacity.combined(with: .scale))
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+    
+    private func openFeaturedTemplate() {
+        switch selectedTab {
+        case .cv:
+            showingCVTemplatePicker = true
+        case .coverLetter:
+            showingCoverLetterTemplatePicker = true
         }
     }
 }
 
-struct CVTemplatesTab: View {
-    @EnvironmentObject private var dataManager: DataManager
-    @State private var selectedTemplate: CVTemplate?
-    @State private var showingTemplateDetail = false
+private struct LibraryEmptyStateCard: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
     
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 16),
-                GridItem(.flexible(), spacing: 16)
-            ], spacing: 16) {
-                ForEach(dataManager.cvTemplates) { template in
-                    CVTemplateThumbnail(template: template) {
-                        selectedTemplate = template
-                        showingTemplateDetail = true
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color(red: 0.39, green: 0.43, blue: 0.94))
+            Text(title)
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color(red: 0.16, green: 0.17, blue: 0.28))
+            Text(subtitle)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(Color(red: 0.4, green: 0.42, blue: 0.54))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.white.opacity(0.88))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct CVTemplatePickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var dataManager: DataManager
+    let onSelect: (CVTemplate) -> Void
+    
+    private let columns = [
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14)
+    ]
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(dataManager.cvTemplates) { template in
+                        CVTemplateThumbnail(template: template) {
+                            dismiss()
+                            DispatchQueue.main.async {
+                                onSelect(template)
+                            }
+                        }
                     }
                 }
+                .padding(16)
             }
-            .padding()
-        }
-        .sheet(isPresented: $showingTemplateDetail) {
-            if let template = selectedTemplate {
-                CVTemplateDetailView(template: template)
+            .navigationTitle("Choose Template")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
             }
         }
     }
 }
 
-struct CoverLetterTemplatesTab: View {
+struct CoverLetterTemplatePickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var dataManager: DataManager
-    @State private var selectedTemplate: CoverLetterTemplate?
-    @State private var showingTemplateDetail = false
+    let onSelect: (CoverLetterTemplate) -> Void
+    
+    private let columns = [
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14)
+    ]
     
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 16),
-                GridItem(.flexible(), spacing: 16)
-            ], spacing: 16) {
-                ForEach(dataManager.coverLetterTemplates) { template in
-                    CoverLetterTemplateThumbnail(template: template) {
-                        selectedTemplate = template
-                        showingTemplateDetail = true
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(dataManager.coverLetterTemplates) { template in
+                        CoverLetterTemplateThumbnail(template: template) {
+                            dismiss()
+                            DispatchQueue.main.async {
+                                onSelect(template)
+                            }
+                        }
                     }
                 }
+                .padding(16)
             }
-            .padding()
-        }
-        .sheet(isPresented: $showingTemplateDetail) {
-            if let template = selectedTemplate {
-                CoverLetterTemplateDetailView(template: template)
+            .navigationTitle("Choose Template")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
             }
         }
     }
@@ -98,36 +406,58 @@ struct CoverLetterTemplatesTab: View {
 struct CVTemplateThumbnail: View {
     let template: CVTemplate
     let onTap: () -> Void
-    @EnvironmentObject private var dataManager: DataManager
     @State private var isGeneratingThumbnail = false
     @State private var thumbnailPDFData: Data?
     
     var body: some View {
         Button(action: onTap) {
-            Group {
-                if isGeneratingThumbnail {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray6))
-                        .frame(height: 220)
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        )
-                } else if let thumbnailData = thumbnailPDFData {
-                    PDFThumbnailView(pdfData: thumbnailData)
-                        .frame(height: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray6))
-                        .frame(height: 220)
-                        .overlay(
-                            Image(systemName: "doc.text")
-                                .font(.system(size: 30))
-                                .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
-                        )
+            VStack(alignment: .leading, spacing: 10) {
+                Group {
+                    if isGeneratingThumbnail {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                            .frame(height: 220)
+                            .overlay(
+                                ProgressView()
+                                    .tint(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                            )
+                    } else if let thumbnailData = thumbnailPDFData {
+                        PDFThumbnailView(pdfData: thumbnailData)
+                            .frame(height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                            .frame(height: 220)
+                            .overlay(
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                            )
+                    }
                 }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(template.name)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.16, green: 0.17, blue: 0.28))
+                        .lineLimit(1)
+                    Text(template.category.rawValue)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(red: 0.4, green: 0.42, blue: 0.54))
+                }
+                .padding(.horizontal, 3)
             }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white.opacity(0.9))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 14, x: 0, y: 8)
+            )
         }
         .buttonStyle(.plain)
         .onAppear {
@@ -167,36 +497,58 @@ struct CVTemplateThumbnail: View {
 struct CoverLetterTemplateThumbnail: View {
     let template: CoverLetterTemplate
     let onTap: () -> Void
-    @EnvironmentObject private var dataManager: DataManager
     @State private var isGeneratingThumbnail = false
     @State private var thumbnailPDFData: Data?
     
     var body: some View {
         Button(action: onTap) {
-            Group {
-                if isGeneratingThumbnail {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray6))
-                        .frame(height: 220)
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        )
-                } else if let thumbnailData = thumbnailPDFData {
-                    PDFThumbnailView(pdfData: thumbnailData)
-                        .frame(height: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray6))
-                        .frame(height: 220)
-                        .overlay(
-                            Image(systemName: "envelope")
-                                .font(.system(size: 30))
-                                .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
-                        )
+            VStack(alignment: .leading, spacing: 10) {
+                Group {
+                    if isGeneratingThumbnail {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                            .frame(height: 220)
+                            .overlay(
+                                ProgressView()
+                                    .tint(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                            )
+                    } else if let thumbnailData = thumbnailPDFData {
+                        PDFThumbnailView(pdfData: thumbnailData)
+                            .frame(height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                            .frame(height: 220)
+                            .overlay(
+                                Image(systemName: "envelope")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                            )
+                    }
                 }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(template.name)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.16, green: 0.17, blue: 0.28))
+                        .lineLimit(1)
+                    Text(template.category.rawValue)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(red: 0.4, green: 0.42, blue: 0.54))
+                }
+                .padding(.horizontal, 3)
             }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white.opacity(0.9))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 14, x: 0, y: 8)
+            )
         }
         .buttonStyle(.plain)
         .onAppear {
@@ -294,10 +646,10 @@ struct CVTemplateDetailView: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
                                 } else {
-                                    Image(systemName: "arrow.down.doc.fill")
+                                    Image(systemName: "sparkles")
                                         .font(.system(size: 16, weight: .semibold))
                                 }
-                                Text(isGenerating ? "Generating..." : "Generate CV")
+                                Text(isGenerating ? "Creating..." : "Create Resume")
                                     .font(.headline)
                                     .fontWeight(.semibold)
                             }
@@ -320,6 +672,10 @@ struct CVTemplateDetailView: View {
                         .foregroundColor(.primary)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .disabled(dataManager.userProfile == nil)
+                        
+                        Text("Template preview uses dummy data")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                         
                         if dataManager.userProfile == nil {
                             Text("Complete your profile first")
@@ -363,7 +719,7 @@ struct CVTemplateDetailView: View {
     }
     
     private func generatePreview() {
-        let userProfile = dataManager.userProfile ?? createDummyUserProfile()
+        let userProfile = createDummyUserProfile()
         
         Task {
             do {
@@ -394,6 +750,13 @@ struct CVTemplateDetailView: View {
         
         Task {
             do {
+                var cvDocument = CVDocument(
+                    userProfileId: userProfile.id,
+                    templateId: template.id
+                )
+                cvDocument.colorScheme = template.colorSchemes.first ?? .blue
+                dataManager.saveCVDocument(cvDocument)
+                
                 let pdfDocument = try await PDFGenerationService.shared.generateCV(
                     userProfile: userProfile,
                     template: template,
@@ -580,6 +943,14 @@ struct CoverLetterTemplateDetailView: View {
         Task {
             do {
                 let sampleContent = CoverLetterContent()
+                
+                var coverLetterDocument = CoverLetterDocument(
+                    userProfileId: userProfile.id,
+                    templateId: template.id
+                )
+                coverLetterDocument.colorScheme = template.colorSchemes.first ?? .blue
+                coverLetterDocument.content = sampleContent
+                dataManager.saveCoverLetterDocument(coverLetterDocument)
                 
                 let pdfDocument = try await PDFGenerationService.shared.generateCoverLetter(
                     userProfile: userProfile,

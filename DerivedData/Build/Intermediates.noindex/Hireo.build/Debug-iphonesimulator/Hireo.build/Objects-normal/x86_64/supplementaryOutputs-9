@@ -1,0 +1,30 @@
+{
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/ApplicationDetailView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/ApplicationDetailView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/ApplicationDetailView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/ApplicationDetailView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/ApplicationDetailView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/ApplicationDetailView.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/Sections/PersonalInfoEditView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/PersonalInfoEditView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/PersonalInfoEditView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/PersonalInfoEditView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/PersonalInfoEditView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/PersonalInfoEditView.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/Sections/SkillsEditView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/SkillsEditView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/SkillsEditView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/SkillsEditView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/SkillsEditView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/SkillsEditView.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/Sections/WorkExperienceEditView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/WorkExperienceEditView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/WorkExperienceEditView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/WorkExperienceEditView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/WorkExperienceEditView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/x86_64/WorkExperienceEditView.swiftdeps"
+  }
+}

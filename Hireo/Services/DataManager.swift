@@ -157,6 +157,17 @@ class DataManager: ObservableObject {
             }(),
             {
                 var template = CVTemplate(
+                    id: "modern_grid",
+                    name: "Modern Grid",
+                    description: "Structured editorial layout with boxed header and timeline-free experience sections",
+                    category: .modern
+                )
+                template.colorSchemes = [.gray, .black, .blue]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
+            {
+                var template = CVTemplate(
                     id: "modern_mono",
                     name: "Modern Mono",
                     description: "Editorial two-column CV with bold typography and neutral palette",
