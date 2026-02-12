@@ -300,6 +300,14 @@ struct ModernPersonalInfoStep: View {
                     textContentType: .telephoneNumber,
                     validation: .phone
                 )
+
+                ModernTextArea(
+                    title: "About Me",
+                    text: $profile.personalInfo.summary,
+                    placeholder: "Share a short professional summary for your templates.",
+                    minLines: 4,
+                    maxLines: 8
+                )
             }
             .modernCard(shadow: ModernTheme.Shadows.medium)
         }

@@ -46,7 +46,7 @@ struct PersonalInfoEditView: View {
                                     .font(ModernTheme.Typography.displaySmall)
                                     .foregroundColor(ModernTheme.Colors.textPrimary)
                                 
-                                Text("Your basic contact information")
+                                Text("Your basic contact information and About Me summary")
                                     .font(ModernTheme.Typography.bodyMedium)
                                     .foregroundColor(ModernTheme.Colors.textSecondary)
                                     .multilineTextAlignment(.center)
@@ -93,6 +93,23 @@ struct PersonalInfoEditView: View {
                                     ), displayedComponents: .date)
                                     .font(ModernTheme.Typography.bodyMedium)
                                 }
+                            }
+                            .modernCard(shadow: ModernTheme.Shadows.medium)
+
+                            // About Me
+                            VStack(spacing: ModernTheme.Spacing.md) {
+                                Text("About Me")
+                                    .font(ModernTheme.Typography.headingMedium)
+                                    .foregroundColor(ModernTheme.Colors.textPrimary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                ModernTextArea(
+                                    title: "Professional Summary",
+                                    text: $personalInfo.summary,
+                                    placeholder: "Share a short summary that should appear in your templates.",
+                                    minLines: 4,
+                                    maxLines: 8
+                                )
                             }
                             .modernCard(shadow: ModernTheme.Shadows.medium)
                             

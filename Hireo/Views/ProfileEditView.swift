@@ -28,6 +28,8 @@ struct ProfileEditView: View {
                         .autocapitalization(.none)
                     TextField("Phone", text: $personalInfo.phone)
                         .keyboardType(.phonePad)
+                    TextField("About Me", text: $personalInfo.summary, axis: .vertical)
+                        .lineLimit(3...6)
                 }
                 
                 Section("Address") {

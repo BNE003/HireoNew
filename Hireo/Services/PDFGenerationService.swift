@@ -695,6 +695,10 @@ class CoverLetterPDFRenderer: PDFRenderer {
     let userProfile: UserProfile
     let template: CoverLetterTemplate
     let content: CoverLetterContent
+
+    private var isModernGuidedTemplate: Bool { template.id == "modern_guided_letter" }
+    private var isModernMonoCoverLetterTemplate: Bool { template.id == "modern_mono_letter" }
+    private var isModernEditorialTemplate: Bool { template.id == "modern_editorial" }
     
     init(userProfile: UserProfile, template: CoverLetterTemplate, content: CoverLetterContent) {
         self.userProfile = userProfile
@@ -706,39 +710,16 @@ class CoverLetterPDFRenderer: PDFRenderer {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.main.async {
                 do {
-                    let pageRect = PDFGenerationService.dinA4Rect
-                    let margin: CGFloat = 40
-                    let maxContentY = pageRect.height - margin - 50
-                    
-                    // Create PDF data
-                    let pdfData = NSMutableData()
-                    UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
-                    UIGraphicsBeginPDFPage()
-                    
-                    var currentY: CGFloat = margin
-                    
-                    // Draw header with sender info
-                    currentY = self.drawSenderInfoDirect(at: CGPoint(x: margin, y: currentY), maxWidth: pageRect.width - 2 * margin)
-                    currentY += 40
-                    
-                    // Draw date
-                    currentY = self.drawDateDirect(at: CGPoint(x: margin, y: currentY), maxWidth: pageRect.width - 2 * margin)
-                    currentY += 40
-                    
-                    // Draw recipient info
-                    currentY = self.drawRecipientInfoDirect(at: CGPoint(x: margin, y: currentY), maxWidth: pageRect.width - 2 * margin)
-                    currentY += 40
-                    
-                    // Draw content with page breaks
-                    currentY = self.drawCoverLetterContentWithPageBreaks(at: currentY, maxWidth: pageRect.width - 2 * margin, maxContentY: maxContentY, margin: margin)
-                    
-                    UIGraphicsEndPDFContext()
-                    
-                    // Create PDFDocument from the generated data
-                    guard let pdfDocument = PDFDocument(data: pdfData as Data) else {
-                        throw PDFGenerationError.renderingFailed("Failed to create PDF document from data")
+                    let pdfDocument: PDFDocument
+                    if self.isModernGuidedTemplate {
+                        pdfDocument = try self.generateModernGuidedPDF()
+                    } else if self.isModernMonoCoverLetterTemplate {
+                        pdfDocument = try self.generateModernMonoCoverLetterPDF()
+                    } else if self.isModernEditorialTemplate {
+                        pdfDocument = try self.generateModernEditorialPDF()
+                    } else {
+                        pdfDocument = try self.generateDefaultCoverLetterPDF()
                     }
-                    
                     continuation.resume(returning: pdfDocument)
                 } catch {
                     continuation.resume(throwing: error)
@@ -746,321 +727,1556 @@ class CoverLetterPDFRenderer: PDFRenderer {
             }
         }
     }
-    
-    private func renderCoverLetter(in rect: CGRect) -> UIView {
-        let pageView = UIView(frame: rect)
-        pageView.backgroundColor = .white
-        
-        // Header with sender info
-        renderSenderInfo(in: pageView)
-        
-        // Date
-        renderDate(in: pageView)
-        
-        // Recipient info
-        renderRecipientInfo(in: pageView)
-        
-        // Cover letter content
-        renderContent(in: pageView)
-        
-        return pageView
+
+    private func generateDefaultCoverLetterPDF() throws -> PDFDocument {
+        let pageRect = PDFGenerationService.dinA4Rect
+        let margin: CGFloat = 40
+        let maxContentY = pageRect.height - margin - 50
+
+        let pdfData = NSMutableData()
+        UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
+        UIGraphicsBeginPDFPage()
+
+        var currentY: CGFloat = margin
+
+        currentY = drawSenderInfoDirect(at: CGPoint(x: margin, y: currentY), maxWidth: pageRect.width - 2 * margin)
+        currentY += 36
+        currentY = drawDateDirect(at: CGPoint(x: margin, y: currentY), maxWidth: pageRect.width - 2 * margin)
+        currentY += 30
+        currentY = drawRecipientInfoDirect(at: CGPoint(x: margin, y: currentY), maxWidth: pageRect.width - 2 * margin)
+        currentY += 32
+        _ = drawCoverLetterContentWithPageBreaks(
+            at: currentY,
+            maxWidth: pageRect.width - 2 * margin,
+            maxContentY: maxContentY,
+            margin: margin
+        )
+
+        UIGraphicsEndPDFContext()
+
+        guard let pdfDocument = PDFDocument(data: pdfData as Data) else {
+            throw PDFGenerationError.renderingFailed("Failed to create PDF document from data")
+        }
+        return pdfDocument
     }
-    
-    private func renderSenderInfo(in containerView: UIView) {
-        let senderView = UIView()
-        senderView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(senderView)
-        
-        NSLayoutConstraint.activate([
-            senderView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 40),
-            senderView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 40),
-            senderView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -40),
-            senderView.heightAnchor.constraint(equalToConstant: 80)
-        ])
-        
-        let nameLabel = UILabel()
-        nameLabel.text = "\(userProfile.personalInfo.firstName) \(userProfile.personalInfo.lastName)"
-        nameLabel.font = UIFont.boldSystemFont(ofSize: 16)
-        nameLabel.translatesAutoresizingMaskIntoConstraints = false
-        senderView.addSubview(nameLabel)
-        
-        let addressLabel = UILabel()
-        addressLabel.text = "\(userProfile.personalInfo.address.street)\n\(userProfile.personalInfo.address.postalCode) \(userProfile.personalInfo.address.city)"
-        addressLabel.font = UIFont.systemFont(ofSize: 12)
-        addressLabel.numberOfLines = 0
-        addressLabel.translatesAutoresizingMaskIntoConstraints = false
-        senderView.addSubview(addressLabel)
-        
-        let contactLabel = UILabel()
-        contactLabel.text = "\(userProfile.personalInfo.email) | \(userProfile.personalInfo.phone)"
-        contactLabel.font = UIFont.systemFont(ofSize: 12)
-        contactLabel.translatesAutoresizingMaskIntoConstraints = false
-        senderView.addSubview(contactLabel)
-        
-        NSLayoutConstraint.activate([
-            nameLabel.topAnchor.constraint(equalTo: senderView.topAnchor),
-            nameLabel.leadingAnchor.constraint(equalTo: senderView.leadingAnchor),
-            
-            addressLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 5),
-            addressLabel.leadingAnchor.constraint(equalTo: senderView.leadingAnchor),
-            
-            contactLabel.topAnchor.constraint(equalTo: addressLabel.bottomAnchor, constant: 5),
-            contactLabel.leadingAnchor.constraint(equalTo: senderView.leadingAnchor)
-        ])
+
+    private func generateModernGuidedPDF() throws -> PDFDocument {
+        let pageRect = PDFGenerationService.dinA4Rect
+        let pdfData = NSMutableData()
+
+        UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
+        UIGraphicsBeginPDFPage()
+        drawModernGuidedTemplate(in: pageRect)
+        UIGraphicsEndPDFContext()
+
+        guard let pdfDocument = PDFDocument(data: pdfData as Data) else {
+            throw PDFGenerationError.renderingFailed("Failed to create PDF document from data")
+        }
+        return pdfDocument
     }
-    
-    // Direct drawing methods for multi-page support
+
+    private func drawModernGuidedTemplate(in pageRect: CGRect) {
+        let primaryHex = template.colorSchemes.first?.primaryColor ?? "#0A84FF"
+        let secondaryHex = template.colorSchemes.first?.secondaryColor ?? "#64D2FF"
+        let primaryColor = UIColor(hex: primaryHex)
+        let secondaryColor = UIColor(hex: secondaryHex)
+        let inkColor = UIColor(hex: "#1C1F26")
+
+        UIColor.white.setFill()
+        UIBezierPath(rect: pageRect).fill()
+
+        let accentStripRect = CGRect(x: 0, y: 0, width: 14, height: pageRect.height)
+        primaryColor.setFill()
+        UIBezierPath(rect: accentStripRect).fill()
+
+        let margin: CGFloat = 34
+        let headerRect = CGRect(x: margin, y: margin, width: pageRect.width - (margin * 2), height: 94)
+        primaryColor.withAlphaComponent(0.08).setFill()
+        UIBezierPath(roundedRect: headerRect, cornerRadius: 14).fill()
+        secondaryColor.withAlphaComponent(0.24).setStroke()
+        let headerStroke = UIBezierPath(roundedRect: headerRect, cornerRadius: 14)
+        headerStroke.lineWidth = 1
+        headerStroke.stroke()
+
+        let name = editorialFullName()
+        let role = editorialRole()
+        _ = drawTextDirect(
+            name,
+            at: CGPoint(x: headerRect.minX + 18, y: headerRect.minY + 18),
+            font: editorialSansFont(size: 25, weight: .bold),
+            color: inkColor,
+            maxWidth: headerRect.width - 36
+        )
+        _ = drawTextDirect(
+            role,
+            at: CGPoint(x: headerRect.minX + 18, y: headerRect.minY + 53),
+            font: editorialSansFont(size: 12, weight: .medium),
+            color: UIColor(hex: "#4A5464"),
+            maxWidth: headerRect.width - 36
+        )
+
+        let contactText = "\(editorialEmailFallback())  •  \(editorialPhoneFallback())"
+        _ = drawTextDirect(
+            contactText,
+            at: CGPoint(x: headerRect.minX + 18, y: headerRect.minY + 71),
+            font: editorialSansFont(size: 9.8, weight: .regular),
+            color: UIColor(hex: "#586173"),
+            maxWidth: headerRect.width - 36
+        )
+
+        let contentTop = headerRect.maxY + 22
+        let sidePanelRect = CGRect(x: margin, y: contentTop, width: 170, height: pageRect.height - contentTop - margin)
+        primaryColor.withAlphaComponent(0.06).setFill()
+        UIBezierPath(roundedRect: sidePanelRect, cornerRadius: 12).fill()
+
+        let sideTitleColor = UIColor(hex: "#3F4960")
+        let sideValueColor = UIColor(hex: "#242A36")
+        var sideY = sidePanelRect.minY + 16
+
+        _ = drawTextDirect(
+            "TO",
+            at: CGPoint(x: sidePanelRect.minX + 14, y: sideY),
+            font: editorialSansFont(size: 10, weight: .bold),
+            color: sideTitleColor,
+            maxWidth: sidePanelRect.width - 28,
+            kern: 1.2
+        )
+        sideY += 16
+
+        let recipientBlock = "\(monoCoverRecipientName())\n\(monoCoverRecipientRole())\n\(content.recipientCompany.isEmpty ? "Company Name" : content.recipientCompany)"
+        let recipientSize = drawTextDirect(
+            recipientBlock,
+            at: CGPoint(x: sidePanelRect.minX + 14, y: sideY),
+            font: editorialSansFont(size: 10, weight: .regular),
+            color: sideValueColor,
+            maxWidth: sidePanelRect.width - 28,
+            lineSpacing: 2.4
+        )
+        sideY += recipientSize.height + 18
+
+        _ = drawTextDirect(
+            "DATE",
+            at: CGPoint(x: sidePanelRect.minX + 14, y: sideY),
+            font: editorialSansFont(size: 10, weight: .bold),
+            color: sideTitleColor,
+            maxWidth: sidePanelRect.width - 28,
+            kern: 1.2
+        )
+        sideY += 16
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd MMM yyyy"
+        _ = drawTextDirect(
+            dateFormatter.string(from: Date()),
+            at: CGPoint(x: sidePanelRect.minX + 14, y: sideY),
+            font: editorialSansFont(size: 10, weight: .regular),
+            color: sideValueColor,
+            maxWidth: sidePanelRect.width - 28
+        )
+        sideY += 28
+
+        _ = drawTextDirect(
+            "TEMPLATE",
+            at: CGPoint(x: sidePanelRect.minX + 14, y: sideY),
+            font: editorialSansFont(size: 10, weight: .bold),
+            color: sideTitleColor,
+            maxWidth: sidePanelRect.width - 28,
+            kern: 1.2
+        )
+        sideY += 16
+        _ = drawTextDirect(
+            template.name,
+            at: CGPoint(x: sidePanelRect.minX + 14, y: sideY),
+            font: editorialSansFont(size: 10, weight: .regular),
+            color: sideValueColor,
+            maxWidth: sidePanelRect.width - 28
+        )
+
+        let mainX = sidePanelRect.maxX + 24
+        let mainWidth = pageRect.width - margin - mainX
+        let mainBottom = pageRect.height - margin - 16
+        var mainY = contentTop
+
+        let salutation = content.salutation.isEmpty ? "Dear Hiring Manager," : content.salutation
+        _ = drawTextDirect(
+            salutation,
+            at: CGPoint(x: mainX, y: mainY),
+            font: editorialSansFont(size: 11.5, weight: .semibold),
+            color: inkColor,
+            maxWidth: mainWidth
+        )
+        mainY += 24
+
+        for paragraph in modernGuidedParagraphs() {
+            if mainY > mainBottom - 120 { break }
+            let size = drawTextDirect(
+                paragraph,
+                at: CGPoint(x: mainX, y: mainY),
+                font: editorialSansFont(size: 10.8, weight: .regular),
+                color: UIColor(hex: "#2C3340"),
+                maxWidth: mainWidth,
+                lineSpacing: 2.8
+            )
+            mainY += size.height + 14
+        }
+
+        let closingText = content.closing.isEmpty
+            ? "Thank you for your time and consideration. I would welcome the opportunity to discuss my application with you."
+            : content.closing
+
+        let closingY = min(mainY + 6, mainBottom - 78)
+        _ = drawTextDirect(
+            closingText,
+            at: CGPoint(x: mainX, y: closingY),
+            font: editorialSansFont(size: 10.8, weight: .regular),
+            color: UIColor(hex: "#2C3340"),
+            maxWidth: mainWidth,
+            lineSpacing: 2.6
+        )
+
+        let signatureName = content.signature.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? editorialFullName()
+            : content.signature
+
+        _ = drawTextDirect(
+            signatureName,
+            at: CGPoint(x: mainX, y: mainBottom - 24),
+            font: editorialSansFont(size: 11.2, weight: .semibold),
+            color: inkColor,
+            maxWidth: mainWidth
+        )
+    }
+
+    private func generateModernEditorialPDF() throws -> PDFDocument {
+        let pageRect = PDFGenerationService.dinA4Rect
+        let pdfData = NSMutableData()
+
+        UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
+        UIGraphicsBeginPDFPage()
+        drawModernEditorialTemplate(in: pageRect)
+        UIGraphicsEndPDFContext()
+
+        guard let pdfDocument = PDFDocument(data: pdfData as Data) else {
+            throw PDFGenerationError.renderingFailed("Failed to create PDF document from data")
+        }
+        return pdfDocument
+    }
+
+    private func generateModernMonoCoverLetterPDF() throws -> PDFDocument {
+        let pageRect = PDFGenerationService.dinA4Rect
+        let pdfData = NSMutableData()
+
+        UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
+        UIGraphicsBeginPDFPage()
+        drawModernMonoCoverLetterTemplate(in: pageRect)
+        UIGraphicsEndPDFContext()
+
+        guard let pdfDocument = PDFDocument(data: pdfData as Data) else {
+            throw PDFGenerationError.renderingFailed("Failed to create PDF document from data")
+        }
+        return pdfDocument
+    }
+
+    private func drawModernMonoCoverLetterTemplate(in pageRect: CGRect) {
+        UIColor.white.setFill()
+        UIBezierPath(rect: pageRect).fill()
+
+        let panelInset: CGFloat = 24
+        let panelRect = CGRect(
+            x: panelInset,
+            y: panelInset,
+            width: pageRect.width - (panelInset * 2),
+            height: pageRect.height - (panelInset * 2)
+        )
+
+        UIColor(hex: "#F4F2EE").setFill()
+        UIBezierPath(rect: panelRect).fill()
+        UIColor(hex: "#D9D5CC").setStroke()
+        let borderPath = UIBezierPath(rect: panelRect)
+        borderPath.lineWidth = 1
+        borderPath.stroke()
+
+        let photoRect = CGRect(x: panelRect.minX + 28, y: panelRect.minY + 34, width: 124, height: 124)
+        drawMonoCoverProfileImage(in: photoRect)
+
+        let nameX = photoRect.maxX + 34
+        let headerWidth = panelRect.maxX - nameX - 24
+        let displayFont = monoCoverFont(size: 54, weight: .black)
+        let headingFont = monoCoverFont(size: 14, weight: .bold)
+        let bodyFont = monoCoverFont(size: 10.5, weight: .regular)
+
+        let fullName = monoCoverFullName().uppercased()
+        _ = drawTextDirect(
+            fullName,
+            at: CGPoint(x: nameX, y: photoRect.minY + 2),
+            font: displayFont,
+            color: UIColor(hex: "#131313"),
+            maxWidth: headerWidth
+        )
+
+        var summaryY = photoRect.minY + displayFont.lineHeight + 10
+        summaryY += drawMonoCoverSectionTitle("ABOUT ME", at: CGPoint(x: nameX, y: summaryY), font: headingFont)
+        summaryY += 8
+
+        _ = drawTextDirect(
+            monoCoverSummary(),
+            at: CGPoint(x: nameX, y: summaryY),
+            font: bodyFont,
+            color: UIColor(hex: "#3E3E3E"),
+            maxWidth: headerWidth,
+            lineSpacing: 2.2
+        )
+
+        let bodyTop = photoRect.maxY + 30
+        let leftPanel = CGRect(
+            x: panelRect.minX + 18,
+            y: bodyTop,
+            width: 178,
+            height: panelRect.maxY - bodyTop - 18
+        )
+        UIColor(hex: "#EDE9E2").setFill()
+        UIBezierPath(rect: leftPanel).fill()
+
+        let leftContentX = leftPanel.minX + 14
+        let leftContentWidth = leftPanel.width - 28
+        _ = drawMonoCoverRecipientPanel(
+            at: CGPoint(x: leftContentX, y: leftPanel.minY + 22),
+            maxWidth: leftContentWidth
+        )
+
+        let rightX = leftPanel.maxX + 40
+        let rightWidth = panelRect.maxX - rightX - 24
+        _ = drawMonoCoverLetterBody(
+            at: CGPoint(x: rightX, y: bodyTop + 8),
+            maxWidth: rightWidth,
+            maxY: panelRect.maxY - 26
+        )
+    }
+
+    private func monoCoverFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let candidates: [String]
+        switch weight {
+        case .black, .heavy, .bold:
+            candidates = [
+                "SpaceGrotesk-Bold",
+                "Sora-ExtraBold",
+                "Manrope-ExtraBold",
+                "AvenirNextCondensed-Heavy",
+                "AvenirNext-Bold",
+                "HelveticaNeue-Bold"
+            ]
+        case .semibold, .medium:
+            candidates = [
+                "SpaceGrotesk-Medium",
+                "Sora-SemiBold",
+                "Manrope-SemiBold",
+                "AvenirNext-DemiBold",
+                "HelveticaNeue-Medium"
+            ]
+        default:
+            candidates = [
+                "Inter-Regular",
+                "Manrope-Regular",
+                "AvenirNext-Regular",
+                "HelveticaNeue"
+            ]
+        }
+
+        for name in candidates {
+            if let font = UIFont(name: name, size: size) {
+                return font
+            }
+        }
+
+        return UIFont.systemFont(ofSize: size, weight: weight)
+    }
+
     @discardableResult
+    private func drawMonoCoverSectionTitle(_ text: String, at point: CGPoint, font: UIFont) -> CGFloat {
+        UIColor(hex: "#DDD8CD").setFill()
+        UIBezierPath(rect: CGRect(x: point.x - 8, y: point.y + 2, width: 2, height: font.lineHeight - 2)).fill()
+        _ = drawTextDirect(text, at: point, font: font, color: UIColor(hex: "#1C1C1C"), maxWidth: 260, kern: 1.1)
+        return font.lineHeight
+    }
+
+    private func drawMonoCoverProfileImage(in rect: CGRect) {
+        if let profileImageData = userProfile.personalInfo.profileImageData,
+           let image = UIImage(data: profileImageData),
+           let context = UIGraphicsGetCurrentContext() {
+            context.saveGState()
+            UIBezierPath(rect: rect).addClip()
+
+            let imageAspectRatio = image.size.width / image.size.height
+            let rectAspectRatio = rect.width / rect.height
+            let drawRect: CGRect
+
+            if imageAspectRatio > rectAspectRatio {
+                let drawHeight = rect.height
+                let drawWidth = drawHeight * imageAspectRatio
+                drawRect = CGRect(
+                    x: rect.minX + ((rect.width - drawWidth) / 2),
+                    y: rect.minY,
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            } else {
+                let drawWidth = rect.width
+                let drawHeight = drawWidth / imageAspectRatio
+                drawRect = CGRect(
+                    x: rect.minX,
+                    y: rect.minY + ((rect.height - drawHeight) / 2),
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            }
+
+            image.draw(in: drawRect)
+            context.restoreGState()
+        } else {
+            UIColor(hex: "#2A2A2A").setFill()
+            UIBezierPath(rect: rect).fill()
+        }
+
+        UIColor(hex: "#202020").setStroke()
+        let frame = UIBezierPath(rect: rect)
+        frame.lineWidth = 1
+        frame.stroke()
+    }
+
+    private func drawMonoCoverRecipientPanel(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = monoCoverFont(size: 11.5, weight: .bold)
+        let bodyFont = monoCoverFont(size: 9.8, weight: .regular)
+        var y = point.y
+
+        y += drawMonoCoverSectionTitle("TO", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 11
+
+        _ = drawTextDirect(
+            monoCoverRecipientRole(),
+            at: CGPoint(x: point.x, y: y),
+            font: monoCoverFont(size: 9.5, weight: .semibold),
+            color: UIColor(hex: "#575757"),
+            maxWidth: maxWidth
+        )
+        y += 13
+
+        _ = drawTextDirect(
+            monoCoverRecipientName(),
+            at: CGPoint(x: point.x, y: y),
+            font: monoCoverFont(size: 10.2, weight: .semibold),
+            color: UIColor(hex: "#353535"),
+            maxWidth: maxWidth
+        )
+        y += 16
+
+        y += drawTextDirect(
+            monoCoverRecipientCompanyBlock(),
+            at: CGPoint(x: point.x, y: y),
+            font: bodyFont,
+            color: UIColor(hex: "#565656"),
+            maxWidth: maxWidth,
+            lineSpacing: 2.2
+        ).height
+
+        return y
+    }
+
+    private func drawMonoCoverLetterBody(at point: CGPoint, maxWidth: CGFloat, maxY: CGFloat) -> CGFloat {
+        let headingFont = monoCoverFont(size: 13.5, weight: .bold)
+        let metaFont = monoCoverFont(size: 10.2, weight: .medium)
+        let bodyFont = monoCoverFont(size: 9.9, weight: .regular)
+        var y = point.y
+
+        y += drawMonoCoverSectionTitle("COVER LETTER", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        _ = drawTextDirect(
+            monoCoverRecipientRole(),
+            at: CGPoint(x: point.x, y: y),
+            font: metaFont,
+            color: UIColor(hex: "#5C5C5C"),
+            maxWidth: maxWidth
+        )
+        y += 13
+
+        y += drawTextDirect(
+            "\(monoCoverRecipientName())\n\(monoCoverRecipientCompanyBlock())",
+            at: CGPoint(x: point.x, y: y),
+            font: bodyFont,
+            color: UIColor(hex: "#555555"),
+            maxWidth: maxWidth,
+            lineSpacing: 2.1
+        ).height
+        y += 10
+
+        _ = drawTextDirect(
+            content.salutation.isEmpty ? "Dear Sir," : content.salutation,
+            at: CGPoint(x: point.x, y: y),
+            font: metaFont,
+            color: UIColor(hex: "#303030"),
+            maxWidth: maxWidth - 140
+        )
+        _ = drawTextDirect(
+            monoCoverDateString(),
+            at: CGPoint(x: point.x + maxWidth - 140, y: y),
+            font: bodyFont,
+            color: UIColor(hex: "#6B6B6B"),
+            maxWidth: 140,
+            alignment: .right
+        )
+        y += 22
+
+        for paragraph in monoCoverParagraphs() {
+            if y > maxY - 110 { break }
+            let paragraphHeight = drawTextDirect(
+                paragraph,
+                at: CGPoint(x: point.x, y: y),
+                font: bodyFont,
+                color: UIColor(hex: "#3F3F3F"),
+                maxWidth: maxWidth,
+                lineSpacing: 2.6
+            ).height
+            y += paragraphHeight + 12
+        }
+
+        let signatureBaseY = min(max(y + 8, maxY - 92), maxY - 70)
+        _ = drawTextDirect(
+            "Signature",
+            at: CGPoint(x: point.x, y: signatureBaseY),
+            font: monoCoverFont(size: 9.6, weight: .semibold),
+            color: UIColor(hex: "#2F2F2F"),
+            maxWidth: maxWidth
+        )
+        _ = drawTextDirect(
+            monoCoverSignatureName(),
+            at: CGPoint(x: point.x, y: signatureBaseY + 14),
+            font: monoCoverFont(size: 10, weight: .regular),
+            color: UIColor(hex: "#494949"),
+            maxWidth: maxWidth
+        )
+        _ = drawTextDirect(
+            monoCoverSignatureName(),
+            at: CGPoint(x: point.x, y: signatureBaseY + 30),
+            font: editorialScriptFont(size: 17),
+            color: UIColor(hex: "#5C5C5C"),
+            maxWidth: 180
+        )
+
+        return signatureBaseY + 50
+    }
+
+    private func monoCoverDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMMM, yyyy"
+        return "Date: \(formatter.string(from: Date()))"
+    }
+
+    private func monoCoverFullName() -> String {
+        let first = userProfile.personalInfo.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let last = userProfile.personalInfo.lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let combined = "\(first) \(last)".trimmingCharacters(in: .whitespacesAndNewlines)
+        return combined.isEmpty ? "James Smith" : combined
+    }
+
+    private func monoCoverSummary() -> String {
+        let text = userProfile.personalInfo.summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty { return text }
+        return "Creative and reliable professional with strong communication skills, practical execution and a detail-oriented way of working."
+    }
+
+    private func monoCoverRecipientName() -> String {
+        if let name = content.recipientName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            return name
+        }
+        return "Sonia Marmeladova"
+    }
+
+    private func monoCoverRecipientRole() -> String {
+        if let position = content.recipientPosition?.trimmingCharacters(in: .whitespacesAndNewlines), !position.isEmpty {
+            return position
+        }
+        return "CEO"
+    }
+
+    private func monoCoverRecipientCompanyBlock() -> String {
+        let company = content.recipientCompany.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !company.isEmpty {
+            return "\(company)\n\(monoCoverAddressLine())"
+        }
+        return "123 Street Name City Name,\nState, Country, 12345"
+    }
+
+    private func monoCoverAddressLine() -> String {
+        let address = userProfile.personalInfo.address
+        var parts: [String] = []
+        if !address.street.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append(address.street.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        if !address.city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append(address.city.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        if !address.country.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append(address.country.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        if parts.isEmpty {
+            return "State, Country, 12345"
+        }
+        return parts.joined(separator: ", ")
+    }
+
+    private func monoCoverSignatureName() -> String {
+        let signature = content.signature.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !signature.isEmpty { return signature }
+        return monoCoverFullName()
+    }
+
+    private func monoCoverParagraphs() -> [String] {
+        let intro = content.introduction.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = content.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let closing = content.closing.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        var values: [String] = []
+        if !intro.isEmpty { values.append(intro) }
+        if !body.isEmpty { values.append(body) }
+        if !closing.isEmpty { values.append(closing) }
+
+        if !values.isEmpty { return values }
+
+        return [
+            "This cover letter template mirrors the visual language of the matching CV and keeps the layout clear, structured and easy to scan.",
+            "I bring practical delivery experience, strong communication and a consistent focus on high-quality execution in collaborative environments.",
+            "Thank you for reviewing my application. I would welcome the opportunity to discuss how I can contribute to your team."
+        ]
+    }
+
+    private func modernGuidedParagraphs() -> [String] {
+        let intro = content.introduction.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = content.body.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        var paragraphs: [String] = []
+        if !intro.isEmpty {
+            paragraphs.append(intro)
+        }
+
+        if !body.isEmpty {
+            let bodyParts = body
+                .components(separatedBy: "\n\n")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            paragraphs.append(contentsOf: bodyParts)
+        }
+
+        if !paragraphs.isEmpty {
+            return paragraphs
+        }
+
+        return [
+            "I am writing to express my strong interest in the position at your company and the opportunity to contribute to impactful work.",
+            "With hands-on experience in delivery-focused teams, I have built reliable solutions, collaborated across functions, and improved results through structured execution.",
+            "I am confident that my technical and communication skills align well with your needs and would allow me to add value quickly."
+        ]
+    }
+
+    private func drawModernEditorialTemplate(in pageRect: CGRect) {
+        let yellowBackground = UIColor(hex: "#D8D07A")
+        let inkColor = UIColor(hex: "#1D1D1D")
+        let lineColor = UIColor(hex: "#6A6A6A")
+
+        yellowBackground.setFill()
+        UIBezierPath(rect: pageRect).fill()
+
+        let paperRect = CGRect(
+            x: 22,
+            y: 16,
+            width: pageRect.width - 44,
+            height: pageRect.height - 32
+        )
+
+        UIColor.white.setFill()
+        UIBezierPath(rect: paperRect).fill()
+        UIColor(hex: "#D9D9D9").setStroke()
+        let paperStroke = UIBezierPath(rect: paperRect)
+        paperStroke.lineWidth = 1
+        paperStroke.stroke()
+
+        let inset: CGFloat = 22
+        let topY = paperRect.minY + 22
+        let photoRect = CGRect(x: paperRect.maxX - inset - 160, y: topY + 4, width: 160, height: 198)
+
+        let leftColumnX = paperRect.minX + inset
+        let leftColumnWidth = photoRect.minX - leftColumnX - 16
+        let role = userProfile.personalInfo.title.isEmpty ? "Graphic Designer" : userProfile.personalInfo.title
+        let firstName = userProfile.personalInfo.firstName.isEmpty ? "OLE" : userProfile.personalInfo.firstName.uppercased()
+        let lastName = userProfile.personalInfo.lastName.isEmpty ? "GOODWIN" : userProfile.personalInfo.lastName.uppercased()
+
+        var nameY = topY + 10
+        let roleText = editorialTruncatedText(
+            role,
+            font: editorialSansFont(size: 13, weight: .regular),
+            maxWidth: leftColumnWidth,
+            maxHeight: 32,
+            lineSpacing: 1.8
+        )
+        let roleSize = drawTextDirect(
+            roleText,
+            at: CGPoint(x: leftColumnX, y: nameY),
+            font: editorialSansFont(size: 13, weight: .regular),
+            color: UIColor(hex: "#444444"),
+            maxWidth: leftColumnWidth,
+            lineSpacing: 1.8
+        )
+        nameY += roleSize.height + 5
+
+        let firstNameFont = editorialFittedFont(
+            for: firstName,
+            maxWidth: leftColumnWidth,
+            baseSize: 28,
+            minSize: 18,
+            weight: .semibold
+        )
+        let firstNameSize = drawTextDirect(
+            firstName,
+            at: CGPoint(x: leftColumnX, y: nameY),
+            font: firstNameFont,
+            color: inkColor,
+            maxWidth: leftColumnWidth
+        )
+        nameY += firstNameSize.height + 1
+
+        let lastNameFont = editorialFittedFont(
+            for: lastName,
+            maxWidth: leftColumnWidth,
+            baseSize: 36,
+            minSize: 22,
+            weight: .bold
+        )
+        let lastNameSize = drawTextDirect(
+            lastName,
+            at: CGPoint(x: leftColumnX, y: nameY),
+            font: lastNameFont,
+            color: inkColor,
+            maxWidth: leftColumnWidth
+        )
+        let nameBottomY = nameY + lastNameSize.height
+
+        let aboutTopY = max(nameBottomY + 8, topY + 98)
+        let aboutHeight = max(106, photoRect.maxY - aboutTopY)
+        let aboutRect = CGRect(x: leftColumnX, y: aboutTopY, width: leftColumnWidth, height: aboutHeight)
+
+        lineColor.setStroke()
+        let aboutStroke = UIBezierPath(rect: aboutRect)
+        aboutStroke.lineWidth = 1
+        aboutStroke.stroke()
+
+        drawEditorialAboutBlock(in: aboutRect, inkColor: inkColor)
+        drawEditorialProfileImage(in: photoRect)
+
+        let contactRect = CGRect(
+            x: paperRect.minX + inset,
+            y: max(aboutRect.maxY, photoRect.maxY) + 14,
+            width: paperRect.width - (inset * 2),
+            height: 42
+        )
+        drawEditorialContactRow(in: contactRect, lineColor: lineColor, textColor: inkColor)
+
+        let mainTop = contactRect.maxY + 14
+        let socialTop = paperRect.maxY - 34
+        let rightPanelWidth: CGFloat = 186
+        let splitX = paperRect.maxX - inset - rightPanelWidth
+        let leftX = paperRect.minX + inset
+        let leftWidth = splitX - leftX - 14
+        let rightX = splitX + 14
+        let rightWidth = paperRect.maxX - inset - rightX
+
+        lineColor.setStroke()
+        let splitPath = UIBezierPath()
+        splitPath.move(to: CGPoint(x: splitX, y: mainTop))
+        splitPath.addLine(to: CGPoint(x: splitX, y: socialTop - 10))
+        splitPath.lineWidth = 1
+        splitPath.stroke()
+
+        drawEditorialMainLetter(
+            at: CGPoint(x: leftX, y: mainTop + 2),
+            maxWidth: leftWidth,
+            maxY: socialTop - 14,
+            textColor: inkColor
+        )
+
+        drawEditorialSendToPanel(
+            at: CGPoint(x: rightX, y: mainTop + 2),
+            maxWidth: rightWidth,
+            maxY: socialTop - 14,
+            textColor: inkColor
+        )
+
+        drawEditorialSocialFooter(
+            topY: socialTop,
+            paperRect: paperRect,
+            inset: inset,
+            lineColor: lineColor,
+            textColor: inkColor
+        )
+    }
+
+    private func drawEditorialAboutBlock(in rect: CGRect, inkColor: UIColor) {
+        let titleFont = editorialSansFont(size: 11.5, weight: .bold)
+        let bodyFont = editorialSansFont(size: 10, weight: .regular)
+
+        _ = drawTextDirect(
+            "ABOUT ME",
+            at: CGPoint(x: rect.minX + 16, y: rect.minY + 18),
+            font: titleFont,
+            color: inkColor,
+            maxWidth: rect.width - 32,
+            kern: 2
+        )
+
+        let sourceText = userProfile.personalInfo.summary.isEmpty
+            ? "This is the first thing on your resume that an employer sees. Keep it short, concise and unique. Highlight your skills and show employers what assets you bring to the role."
+            : userProfile.personalInfo.summary
+        let maxBodyHeight = max(20, rect.height - 58)
+        let aboutText = editorialTruncatedText(
+            sourceText,
+            font: bodyFont,
+            maxWidth: rect.width - 32,
+            maxHeight: maxBodyHeight,
+            lineSpacing: 2.1
+        )
+
+        _ = drawTextDirect(
+            aboutText,
+            at: CGPoint(x: rect.minX + 16, y: rect.minY + 50),
+            font: bodyFont,
+            color: UIColor(hex: "#2E2E2E"),
+            maxWidth: rect.width - 32,
+            lineSpacing: 2.1
+        )
+    }
+
+    private func drawEditorialBadge(center: CGPoint, textColor: UIColor) {
+        let badgeRadius: CGFloat = 39
+        UIColor(hex: "#E4D81A").setFill()
+        UIBezierPath(ovalIn: CGRect(x: center.x - badgeRadius, y: center.y - badgeRadius, width: badgeRadius * 2, height: badgeRadius * 2)).fill()
+
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        context.saveGState()
+        context.translateBy(x: center.x, y: center.y)
+        context.rotate(by: -0.44)
+
+        _ = drawTextDirect(
+            "graphic designer",
+            at: CGPoint(x: -40, y: -2),
+            font: editorialScriptFont(size: 16),
+            color: textColor,
+            maxWidth: 92
+        )
+        context.restoreGState()
+    }
+
+    private func drawEditorialProfileImage(in rect: CGRect) {
+        if let imageData = userProfile.personalInfo.profileImageData, let image = UIImage(data: imageData) {
+            let imageAspect = image.size.width / image.size.height
+            let rectAspect = rect.width / rect.height
+            let drawRect: CGRect
+
+            if imageAspect > rectAspect {
+                let width = rect.height * imageAspect
+                drawRect = CGRect(x: rect.midX - width / 2, y: rect.minY, width: width, height: rect.height)
+            } else {
+                let height = rect.width / imageAspect
+                drawRect = CGRect(x: rect.minX, y: rect.midY - height / 2, width: rect.width, height: height)
+            }
+
+            guard let context = UIGraphicsGetCurrentContext() else { return }
+            context.saveGState()
+            UIBezierPath(rect: rect).addClip()
+            image.draw(in: drawRect)
+            context.restoreGState()
+        } else {
+            UIColor(hex: "#EBEBEB").setFill()
+            UIBezierPath(rect: rect).fill()
+
+            UIColor(hex: "#909090").setFill()
+            UIBezierPath(ovalIn: CGRect(x: rect.midX - 24, y: rect.minY + 52, width: 48, height: 48)).fill()
+            UIBezierPath(roundedRect: CGRect(x: rect.midX - 42, y: rect.minY + 106, width: 84, height: 64), cornerRadius: 18).fill()
+        }
+
+        UIColor(hex: "#D2D2D2").setStroke()
+        let border = UIBezierPath(rect: rect)
+        border.lineWidth = 1
+        border.stroke()
+    }
+
+    private func drawEditorialContactRow(in rect: CGRect, lineColor: UIColor, textColor: UIColor) {
+        lineColor.setStroke()
+        let topLine = UIBezierPath()
+        topLine.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        topLine.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        topLine.lineWidth = 1
+        topLine.stroke()
+
+        let bottomLine = UIBezierPath()
+        bottomLine.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        bottomLine.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        bottomLine.lineWidth = 1
+        bottomLine.stroke()
+
+        let itemWidth = rect.width / 3
+        for index in 1..<3 {
+            let dividerX = rect.minX + itemWidth * CGFloat(index)
+            let divider = UIBezierPath()
+            divider.move(to: CGPoint(x: dividerX, y: rect.minY + 6))
+            divider.addLine(to: CGPoint(x: dividerX, y: rect.maxY - 6))
+            divider.lineWidth = 1
+            divider.stroke()
+        }
+
+        let phoneValue = userProfile.personalInfo.phone.isEmpty ? "(123) 456-7890" : userProfile.personalInfo.phone
+        let emailValue = userProfile.personalInfo.email.isEmpty ? "ole.goodwin@gmail.com" : userProfile.personalInfo.email
+        let addressValue = editorialFullAddress()
+
+        drawEditorialContactItem(
+            label: "Phone:",
+            value: phoneValue,
+            in: CGRect(x: rect.minX, y: rect.minY, width: itemWidth, height: rect.height),
+            textColor: textColor
+        )
+        drawEditorialContactItem(
+            label: "Email:",
+            value: emailValue,
+            in: CGRect(x: rect.minX + itemWidth, y: rect.minY, width: itemWidth, height: rect.height),
+            textColor: textColor
+        )
+        drawEditorialContactItem(
+            label: "Address:",
+            value: addressValue,
+            in: CGRect(x: rect.minX + itemWidth * 2, y: rect.minY, width: itemWidth, height: rect.height),
+            textColor: textColor
+        )
+    }
+
+    private func drawEditorialContactItem(label: String, value: String, in rect: CGRect, textColor: UIColor) {
+        let labelFont = editorialSansFont(size: 9.3, weight: .semibold)
+        let valueFont = editorialSansFont(size: 9.2, weight: .regular)
+
+        _ = drawTextDirect(
+            label,
+            at: CGPoint(x: rect.minX + 8, y: rect.minY + 7),
+            font: labelFont,
+            color: textColor,
+            maxWidth: rect.width - 16
+        )
+
+        let availableHeight = max(12, rect.height - 21)
+        let fittedValue = editorialTruncatedText(
+            value,
+            font: valueFont,
+            maxWidth: rect.width - 16,
+            maxHeight: availableHeight,
+            lineSpacing: 1.8
+        )
+        _ = drawTextDirect(
+            fittedValue,
+            at: CGPoint(x: rect.minX + 8, y: rect.minY + 20),
+            font: valueFont,
+            color: UIColor(hex: "#343434"),
+            maxWidth: rect.width - 16,
+            lineSpacing: 1.8
+        )
+    }
+
+    private func drawEditorialMainLetter(at point: CGPoint, maxWidth: CGFloat, maxY: CGFloat, textColor: UIColor) {
+        var currentY = point.y
+
+        let headerFont = editorialSansFont(size: 11.5, weight: .semibold)
+        let bodyFont = editorialSansFont(size: 10.3, weight: .regular)
+
+        let receiverName = (content.recipientName?.isEmpty == false) ? content.recipientName! : "Ms. Nothen Bruen"
+        let receiverRole = (content.recipientPosition?.isEmpty == false) ? content.recipientPosition! : "Position in Company"
+        let receiverCompany = content.recipientCompany.isEmpty ? "Company Name" : content.recipientCompany
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd MMM yyyy"
+        let dateText = dateFormatter.string(from: Date())
+        _ = drawTextDirect(
+            dateText,
+            at: CGPoint(x: point.x + maxWidth - 115, y: currentY),
+            font: editorialSansFont(size: 10, weight: .medium),
+            color: textColor,
+            maxWidth: 115,
+            alignment: .right
+        )
+
+        let recipientHeader = editorialTruncatedText(
+            "\(receiverName)\n\(receiverRole)",
+            font: headerFont,
+            maxWidth: maxWidth - 120,
+            maxHeight: 40,
+            lineSpacing: 2.1
+        )
+        let recipientHeaderSize = drawTextDirect(
+            recipientHeader,
+            at: CGPoint(x: point.x, y: currentY),
+            font: headerFont,
+            color: textColor,
+            maxWidth: maxWidth - 120,
+            lineSpacing: 2.1
+        )
+        currentY += recipientHeaderSize.height + 6
+
+        let companyText = editorialTruncatedText(
+            "\(receiverCompany)\n\(editorialCompanyAddress())",
+            font: bodyFont,
+            maxWidth: maxWidth,
+            maxHeight: 50,
+            lineSpacing: 2.2
+        )
+        let companySize = drawTextDirect(
+            companyText,
+            at: CGPoint(x: point.x, y: currentY),
+            font: bodyFont,
+            color: UIColor(hex: "#343434"),
+            maxWidth: maxWidth,
+            lineSpacing: 2.2
+        )
+        currentY += companySize.height + 12
+
+        let salutation = content.salutation.isEmpty ? "Dear Ms. Nothen," : content.salutation
+        let salutationText = editorialTruncatedText(
+            salutation,
+            font: headerFont,
+            maxWidth: maxWidth,
+            maxHeight: 34,
+            lineSpacing: 2
+        )
+        let salutationSize = drawTextDirect(salutationText, at: CGPoint(x: point.x, y: currentY), font: headerFont, color: textColor, maxWidth: maxWidth)
+        currentY += salutationSize.height + 12
+
+        let intro = content.introduction.isEmpty
+            ? "Sed pulvinar proin gravida hendrerit. Arcu cursus vitae congue mauris."
+            : content.introduction
+        let introAvailableHeight = max(0, maxY - currentY - 120)
+        if introAvailableHeight > 16 {
+            let introText = editorialTruncatedText(
+                intro,
+                font: bodyFont,
+                maxWidth: maxWidth,
+                maxHeight: introAvailableHeight,
+                lineSpacing: 2.6
+            )
+            currentY += drawTextDirect(
+                introText,
+                at: CGPoint(x: point.x, y: currentY),
+                font: bodyFont,
+                color: UIColor(hex: "#2F2F2F"),
+                maxWidth: maxWidth,
+                lineSpacing: 2.6
+            ).height + 12
+        }
+
+        let body = content.body.isEmpty
+            ? "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis sint voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident."
+            : content.body
+        let bodyAvailableHeight = max(0, maxY - currentY - 108)
+        if bodyAvailableHeight > 16 {
+            let bodyText = editorialTruncatedText(
+                body,
+                font: bodyFont,
+                maxWidth: maxWidth,
+                maxHeight: bodyAvailableHeight,
+                lineSpacing: 2.6
+            )
+            currentY += drawTextDirect(
+                bodyText,
+                at: CGPoint(x: point.x, y: currentY),
+                font: bodyFont,
+                color: UIColor(hex: "#2F2F2F"),
+                maxWidth: maxWidth,
+                lineSpacing: 2.6
+            ).height + 12
+        }
+
+        let closing = content.closing.isEmpty ? "Best Regards," : content.closing
+        let signatureAnchorY = maxY - 62
+        let closingY = min(currentY, signatureAnchorY - 26)
+        let closingText = editorialTruncatedText(
+            closing,
+            font: headerFont,
+            maxWidth: maxWidth,
+            maxHeight: 28,
+            lineSpacing: 2
+        )
+        _ = drawTextDirect(closingText, at: CGPoint(x: point.x, y: closingY), font: headerFont, color: textColor, maxWidth: maxWidth)
+
+        let signatureName = content.signature.isEmpty ? editorialFullName() : content.signature
+        _ = drawTextDirect(
+            signatureName,
+            at: CGPoint(x: point.x, y: signatureAnchorY),
+            font: editorialSansFont(size: 11.2, weight: .semibold),
+            color: textColor,
+            maxWidth: maxWidth
+        )
+        _ = drawTextDirect(
+            editorialRole(),
+            at: CGPoint(x: point.x, y: signatureAnchorY + 16),
+            font: editorialSansFont(size: 10, weight: .regular),
+            color: UIColor(hex: "#353535"),
+            maxWidth: maxWidth
+        )
+        _ = drawTextDirect(
+            signatureName,
+            at: CGPoint(x: point.x, y: signatureAnchorY + 30),
+            font: editorialScriptFont(size: 17),
+            color: UIColor(hex: "#5A5A5A"),
+            maxWidth: 180
+        )
+    }
+
+    private func drawEditorialSendToPanel(at point: CGPoint, maxWidth: CGFloat, maxY: CGFloat, textColor: UIColor) {
+        var currentY = point.y
+        let headingFont = editorialSansFont(size: 18, weight: .bold)
+        let labelFont = editorialSansFont(size: 10.8, weight: .semibold)
+        let valueFont = editorialSansFont(size: 10.2, weight: .regular)
+
+        let headingSize = drawTextDirect(
+            "SEND TO",
+            at: CGPoint(x: point.x, y: currentY),
+            font: headingFont,
+            color: textColor,
+            maxWidth: maxWidth
+        )
+        currentY += headingSize.height + 8
+
+        let receiverName = (content.recipientName?.isEmpty == false) ? content.recipientName! : "Mr. Jonhatan Doe"
+        let receiverRole = (content.recipientPosition?.isEmpty == false) ? content.recipientPosition! : "Position in Company"
+        let receiverPhone = userProfile.personalInfo.phone.isEmpty ? "+1-202-555-0127" : userProfile.personalInfo.phone
+        let receiverEmail = userProfile.personalInfo.email.isEmpty ? "johnatan.doe@gmail.com" : userProfile.personalInfo.email
+
+        let blocks: [(String, String)] = [
+            ("To:", receiverName + "\n" + receiverRole),
+            ("Phone:", receiverPhone),
+            ("Email:", receiverEmail),
+            ("Company:", editorialCompanyAddress())
+        ]
+
+        for (label, value) in blocks {
+            let available = max(0, maxY - currentY - 28)
+            if available <= 16 { break }
+
+            currentY += drawEditorialLabeledBlock(
+                label,
+                value,
+                atY: currentY,
+                x: point.x,
+                maxWidth: maxWidth,
+                maxHeight: available,
+                labelFont: labelFont,
+                valueFont: valueFont,
+                color: textColor
+            )
+            currentY += 7
+        }
+
+        let footerY = min(currentY + 2, maxY - 26)
+        _ = drawTextDirect("From: \(editorialFullName())", at: CGPoint(x: point.x, y: footerY), font: labelFont, color: textColor, maxWidth: maxWidth)
+        _ = drawTextDirect(editorialRole(), at: CGPoint(x: point.x, y: min(footerY + 15, maxY - 11)), font: valueFont, color: UIColor(hex: "#333333"), maxWidth: maxWidth)
+    }
+
+    private func drawEditorialLabeledBlock(
+        _ label: String,
+        _ value: String,
+        atY y: CGFloat,
+        x: CGFloat,
+        maxWidth: CGFloat,
+        maxHeight: CGFloat? = nil,
+        labelFont: UIFont,
+        valueFont: UIFont,
+        color: UIColor
+    ) -> CGFloat {
+        _ = drawTextDirect(label, at: CGPoint(x: x, y: y), font: labelFont, color: color, maxWidth: maxWidth)
+        let valueMaxHeight = max(10, (maxHeight ?? .greatestFiniteMagnitude) - labelFont.lineHeight - 1)
+        let fittedValue = editorialTruncatedText(
+            value,
+            font: valueFont,
+            maxWidth: maxWidth,
+            maxHeight: valueMaxHeight,
+            lineSpacing: 2.2
+        )
+        let valueSize = drawTextDirect(
+            fittedValue,
+            at: CGPoint(x: x, y: y + labelFont.lineHeight + 1),
+            font: valueFont,
+            color: UIColor(hex: "#343434"),
+            maxWidth: maxWidth,
+            lineSpacing: 2.2
+        )
+        return labelFont.lineHeight + 1 + valueSize.height
+    }
+
+    private func editorialFittedFont(
+        for text: String,
+        maxWidth: CGFloat,
+        baseSize: CGFloat,
+        minSize: CGFloat,
+        weight: UIFont.Weight
+    ) -> UIFont {
+        var size = baseSize
+        while size > minSize {
+            let font = editorialSansFont(size: size, weight: weight)
+            let textWidth = (text as NSString).size(withAttributes: [.font: font]).width
+            if textWidth <= maxWidth {
+                return font
+            }
+            size -= 1
+        }
+        return editorialSansFont(size: minSize, weight: weight)
+    }
+
+    private func editorialTruncatedText(
+        _ text: String,
+        font: UIFont,
+        maxWidth: CGFloat,
+        maxHeight: CGFloat,
+        lineSpacing: CGFloat = 2
+    ) -> String {
+        let source = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !source.isEmpty else { return source }
+        guard maxHeight > 0 else { return "" }
+
+        if estimateTextHeightDirect(source, font: font, maxWidth: maxWidth, lineSpacing: lineSpacing) <= maxHeight {
+            return source
+        }
+
+        let chars = Array(source)
+        var low = 0
+        var high = chars.count
+        var best = ""
+
+        while low <= high {
+            let mid = (low + high) / 2
+            var candidate = String(chars.prefix(mid)).trimmingCharacters(in: .whitespacesAndNewlines)
+            if mid < chars.count && !candidate.isEmpty {
+                candidate += "..."
+            }
+
+            let fits = estimateTextHeightDirect(candidate, font: font, maxWidth: maxWidth, lineSpacing: lineSpacing) <= maxHeight
+            if fits {
+                best = candidate
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+
+        if best.isEmpty {
+            return "..."
+        }
+        return best
+    }
+
+    private func drawEditorialSocialFooter(topY: CGFloat, paperRect: CGRect, inset: CGFloat, lineColor: UIColor, textColor: UIColor) {
+        lineColor.setStroke()
+        let topLine = UIBezierPath()
+        topLine.move(to: CGPoint(x: paperRect.minX + inset, y: topY - 8))
+        topLine.addLine(to: CGPoint(x: paperRect.maxX - inset, y: topY - 8))
+        topLine.lineWidth = 1
+        topLine.stroke()
+
+        let links = editorialSocialLinks()
+        let width = paperRect.width - inset * 2
+        let itemWidth = width / 3
+
+        for index in 0..<3 {
+            let itemX = paperRect.minX + inset + itemWidth * CGFloat(index)
+            UIColor(hex: "#222222").setFill()
+            UIBezierPath(rect: CGRect(x: itemX, y: topY + 5, width: 8, height: 8)).fill()
+
+            _ = drawTextDirect(
+                links[index],
+                at: CGPoint(x: itemX + 14, y: topY + 1),
+                font: editorialSansFont(size: 9.5, weight: .regular),
+                color: UIColor(hex: "#303030"),
+                maxWidth: itemWidth - 16
+            )
+        }
+    }
+
+    private func drawSymbol(_ name: String, in rect: CGRect, color: UIColor) {
+        let config = UIImage.SymbolConfiguration(pointSize: max(8, min(rect.width, rect.height)), weight: .regular)
+        if let image = UIImage(systemName: name, withConfiguration: config)?
+            .withTintColor(color, renderingMode: .alwaysOriginal) {
+            image.draw(in: rect)
+        } else {
+            color.setStroke()
+            let fallback = UIBezierPath(rect: rect)
+            fallback.lineWidth = 1
+            fallback.stroke()
+        }
+    }
+
     private func drawSenderInfoDirect(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
         var currentY = point.y
-        
-        // Name
-        let fullName = "\(userProfile.personalInfo.firstName) \(userProfile.personalInfo.lastName)"
-        let nameSize = drawTextDirect(fullName, at: CGPoint(x: point.x, y: currentY), font: UIFont.boldSystemFont(ofSize: 16), color: .black, maxWidth: maxWidth)
+
+        let nameSize = drawTextDirect(
+            editorialFullName(),
+            at: CGPoint(x: point.x, y: currentY),
+            font: UIFont.boldSystemFont(ofSize: 16),
+            color: .black,
+            maxWidth: maxWidth
+        )
         currentY += nameSize.height + 5
-        
-        // Address
-        let addressText = "\(userProfile.personalInfo.address.street)\n\(userProfile.personalInfo.address.postalCode) \(userProfile.personalInfo.address.city)"
-        let addressSize = drawTextDirect(addressText, at: CGPoint(x: point.x, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+
+        let addressSize = drawTextDirect(
+            editorialFullAddress(),
+            at: CGPoint(x: point.x, y: currentY),
+            font: UIFont.systemFont(ofSize: 12),
+            color: .black,
+            maxWidth: maxWidth,
+            lineSpacing: 2
+        )
         currentY += addressSize.height + 5
-        
-        // Contact
-        let contactText = "\(userProfile.personalInfo.email) | \(userProfile.personalInfo.phone)"
-        let contactSize = drawTextDirect(contactText, at: CGPoint(x: point.x, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+
+        let contactText = "\(editorialEmailFallback()) | \(editorialPhoneFallback())"
+        let contactSize = drawTextDirect(
+            contactText,
+            at: CGPoint(x: point.x, y: currentY),
+            font: UIFont.systemFont(ofSize: 12),
+            color: .black,
+            maxWidth: maxWidth
+        )
         currentY += contactSize.height
-        
+
         return currentY
     }
-    
-    @discardableResult
+
     private func drawDateDirect(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
         let dateText = formatter.string(from: Date())
-        
-        let dateSize = drawTextDirect(dateText, at: CGPoint(x: point.x + maxWidth - 200, y: point.y), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: 200)
+
+        let dateSize = drawTextDirect(
+            dateText,
+            at: CGPoint(x: point.x + maxWidth - 220, y: point.y),
+            font: UIFont.systemFont(ofSize: 12),
+            color: .black,
+            maxWidth: 220,
+            alignment: .right
+        )
         return point.y + dateSize.height
     }
-    
-    @discardableResult
+
     private func drawRecipientInfoDirect(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
         var currentY = point.y
-        
-        // Recipient name (if available)
+
         if let recipientName = content.recipientName, !recipientName.isEmpty {
-            let nameSize = drawTextDirect(recipientName, at: CGPoint(x: point.x, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+            let nameSize = drawTextDirect(
+                recipientName,
+                at: CGPoint(x: point.x, y: currentY),
+                font: UIFont.systemFont(ofSize: 12),
+                color: .black,
+                maxWidth: maxWidth
+            )
             currentY += nameSize.height + 5
         }
-        
-        // Company name
-        let companySize = drawTextDirect(content.recipientCompany, at: CGPoint(x: point.x, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+
+        let companyText = content.recipientCompany.isEmpty ? "Company Name" : content.recipientCompany
+        let companySize = drawTextDirect(
+            companyText,
+            at: CGPoint(x: point.x, y: currentY),
+            font: UIFont.systemFont(ofSize: 12),
+            color: .black,
+            maxWidth: maxWidth
+        )
         currentY += companySize.height
-        
+
         return currentY
     }
-    
-    @discardableResult
+
     private func drawCoverLetterContentWithPageBreaks(at startY: CGFloat, maxWidth: CGFloat, maxContentY: CGFloat, margin: CGFloat) -> CGFloat {
         var currentY = startY
-        
-        // Salutation
-        let salutationSize = drawTextDirect(content.salutation, at: CGPoint(x: margin, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+        let bodyFont = UIFont.systemFont(ofSize: 12)
+
+        let salutation = content.salutation.isEmpty ? "Dear Hiring Manager," : content.salutation
+        let salutationSize = drawTextDirect(
+            salutation,
+            at: CGPoint(x: margin, y: currentY),
+            font: bodyFont,
+            color: .black,
+            maxWidth: maxWidth
+        )
         currentY += salutationSize.height + 20
-        
-        // Introduction
-        let introHeight = estimateTextHeightDirect(content.introduction, font: UIFont.systemFont(ofSize: 12), maxWidth: maxWidth)
+
+        let introText = content.introduction.isEmpty ? "I am writing to express my interest in the open position at your company." : content.introduction
+        let introHeight = estimateTextHeightDirect(introText, font: bodyFont, maxWidth: maxWidth)
         if currentY + introHeight > maxContentY {
             UIGraphicsBeginPDFPage()
             currentY = margin
         }
-        
-        let introSize = drawTextDirect(content.introduction, at: CGPoint(x: margin, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+        let introSize = drawTextDirect(introText, at: CGPoint(x: margin, y: currentY), font: bodyFont, color: .black, maxWidth: maxWidth, lineSpacing: 2.5)
         currentY += introSize.height + 20
-        
-        // Body
-        let bodyHeight = estimateTextHeightDirect(content.body, font: UIFont.systemFont(ofSize: 12), maxWidth: maxWidth)
+
+        let bodyText = content.body.isEmpty ? "With my experience and motivation, I am confident I can contribute measurable value to your team." : content.body
+        let bodyHeight = estimateTextHeightDirect(bodyText, font: bodyFont, maxWidth: maxWidth)
         if currentY + bodyHeight > maxContentY {
             UIGraphicsBeginPDFPage()
             currentY = margin
         }
-        
-        let bodySize = drawTextDirect(content.body, at: CGPoint(x: margin, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+        let bodySize = drawTextDirect(bodyText, at: CGPoint(x: margin, y: currentY), font: bodyFont, color: .black, maxWidth: maxWidth, lineSpacing: 2.5)
         currentY += bodySize.height + 20
-        
-        // Closing
-        if currentY + 60 > maxContentY {
+
+        let closingText = content.closing.isEmpty ? "I would welcome the opportunity to discuss my application in more detail." : content.closing
+        if currentY + 65 > maxContentY {
             UIGraphicsBeginPDFPage()
             currentY = margin
         }
-        
-        let closingSize = drawTextDirect(content.closing, at: CGPoint(x: margin, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+        let closingSize = drawTextDirect(closingText, at: CGPoint(x: margin, y: currentY), font: bodyFont, color: .black, maxWidth: maxWidth, lineSpacing: 2.5)
         currentY += closingSize.height + 20
-        
-        // Signature
-        let signatureSize = drawTextDirect(content.signature, at: CGPoint(x: margin, y: currentY), font: UIFont.systemFont(ofSize: 12), color: .black, maxWidth: maxWidth)
+
+        let signatureText = content.signature.isEmpty ? editorialFullName() : content.signature
+        let signatureSize = drawTextDirect(
+            signatureText,
+            at: CGPoint(x: margin, y: currentY),
+            font: bodyFont,
+            color: .black,
+            maxWidth: maxWidth
+        )
         currentY += signatureSize.height
-        
+
         return currentY
     }
-    
+
     @discardableResult
-    private func drawTextDirect(_ text: String, at point: CGPoint, font: UIFont, color: UIColor, maxWidth: CGFloat) -> CGSize {
+    private func drawTextDirect(
+        _ text: String,
+        at point: CGPoint,
+        font: UIFont,
+        color: UIColor,
+        maxWidth: CGFloat,
+        lineSpacing: CGFloat = 2,
+        kern: CGFloat = 0,
+        alignment: NSTextAlignment = .left
+    ) -> CGSize {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = alignment
+        paragraphStyle.lineBreakMode = .byWordWrapping
+        paragraphStyle.lineSpacing = lineSpacing
+
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: color
+            .foregroundColor: color,
+            .paragraphStyle: paragraphStyle,
+            .kern: kern
         ]
-        
+
         let attributedString = NSAttributedString(string: text, attributes: attributes)
-        let constraintSize = CGSize(width: maxWidth, height: CGFloat.greatestFiniteMagnitude)
-        let boundingRect = attributedString.boundingRect(with: constraintSize, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
-        
-        let drawingRect = CGRect(origin: point, size: boundingRect.size)
-        attributedString.draw(in: drawingRect)
-        
-        return boundingRect.size
+        let constraintSize = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
+        let boundingRect = attributedString.boundingRect(
+            with: constraintSize,
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            context: nil
+        ).integral
+
+        let drawRect = CGRect(x: point.x, y: point.y, width: maxWidth, height: boundingRect.height)
+        attributedString.draw(in: drawRect)
+
+        return CGSize(width: min(maxWidth, boundingRect.width), height: boundingRect.height)
     }
-    
-    private func estimateTextHeightDirect(_ text: String, font: UIFont, maxWidth: CGFloat) -> CGFloat {
-        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+
+    private func estimateTextHeightDirect(
+        _ text: String,
+        font: UIFont,
+        maxWidth: CGFloat,
+        lineSpacing: CGFloat = 2
+    ) -> CGFloat {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineBreakMode = .byWordWrapping
+        paragraphStyle.lineSpacing = lineSpacing
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle
+        ]
         let attributedString = NSAttributedString(string: text, attributes: attributes)
-        let constraintSize = CGSize(width: maxWidth, height: CGFloat.greatestFiniteMagnitude)
+        let constraintSize = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
         let boundingRect = attributedString.boundingRect(with: constraintSize, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
-        return boundingRect.height
+        return ceil(boundingRect.height)
     }
-    
-    private func renderDate(in containerView: UIView) {
-        let dateLabel = UILabel()
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        dateLabel.text = formatter.string(from: Date())
-        dateLabel.font = UIFont.systemFont(ofSize: 12)
-        dateLabel.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(dateLabel)
-        
-        NSLayoutConstraint.activate([
-            dateLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 160),
-            dateLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -40)
-        ])
-    }
-    
-    private func renderRecipientInfo(in containerView: UIView) {
-        let recipientView = UIView()
-        recipientView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(recipientView)
-        
-        NSLayoutConstraint.activate([
-            recipientView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 200),
-            recipientView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 40),
-            recipientView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -40),
-            recipientView.heightAnchor.constraint(equalToConstant: 60)
-        ])
-        
-        if let recipientName = content.recipientName, !recipientName.isEmpty {
-            let nameLabel = UILabel()
-            nameLabel.text = recipientName
-            nameLabel.font = UIFont.systemFont(ofSize: 12)
-            nameLabel.translatesAutoresizingMaskIntoConstraints = false
-            recipientView.addSubview(nameLabel)
-            
-            NSLayoutConstraint.activate([
-                nameLabel.topAnchor.constraint(equalTo: recipientView.topAnchor),
-                nameLabel.leadingAnchor.constraint(equalTo: recipientView.leadingAnchor)
-            ])
+
+    private func editorialSansFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let candidates: [String]
+        switch weight {
+        case .bold, .heavy, .black:
+            candidates = ["Inter-Bold", "Manrope-Bold", "AvenirNext-Bold", "HelveticaNeue-Bold"]
+        case .semibold, .medium:
+            candidates = ["Inter-SemiBold", "Manrope-SemiBold", "AvenirNext-DemiBold", "HelveticaNeue-Medium"]
+        default:
+            candidates = ["Inter-Regular", "Manrope-Regular", "AvenirNext-Regular", "HelveticaNeue"]
         }
-        
-        let companyLabel = UILabel()
-        companyLabel.text = content.recipientCompany
-        companyLabel.font = UIFont.systemFont(ofSize: 12)
-        companyLabel.translatesAutoresizingMaskIntoConstraints = false
-        recipientView.addSubview(companyLabel)
-        
-        NSLayoutConstraint.activate([
-            companyLabel.topAnchor.constraint(equalTo: recipientView.topAnchor, constant: content.recipientName != nil ? 20 : 0),
-            companyLabel.leadingAnchor.constraint(equalTo: recipientView.leadingAnchor)
-        ])
+        for name in candidates {
+            if let font = UIFont(name: name, size: size) {
+                return font
+            }
+        }
+        return UIFont.systemFont(ofSize: size, weight: weight)
     }
-    
-    private func renderContent(in containerView: UIView) {
-        let contentView = UIView()
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(contentView)
-        
-        NSLayoutConstraint.activate([
-            contentView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 300),
-            contentView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 40),
-            contentView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -40),
-            contentView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -100)
-        ])
-        
-        var currentY: CGFloat = 0
-        
-        // Salutation
-        let salutationLabel = UILabel()
-        salutationLabel.text = content.salutation
-        salutationLabel.font = UIFont.systemFont(ofSize: 12)
-        salutationLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(salutationLabel)
-        
-        NSLayoutConstraint.activate([
-            salutationLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            salutationLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor)
-        ])
-        currentY += 30
-        
-        // Introduction
-        let introLabel = UILabel()
-        introLabel.text = content.introduction
-        introLabel.font = UIFont.systemFont(ofSize: 12)
-        introLabel.numberOfLines = 0
-        introLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(introLabel)
-        
-        NSLayoutConstraint.activate([
-            introLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            introLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            introLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
-        ])
-        currentY += 80
-        
-        // Body
-        let bodyLabel = UILabel()
-        bodyLabel.text = content.body
-        bodyLabel.font = UIFont.systemFont(ofSize: 12)
-        bodyLabel.numberOfLines = 0
-        bodyLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(bodyLabel)
-        
-        NSLayoutConstraint.activate([
-            bodyLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            bodyLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            bodyLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
-        ])
-        currentY += 120
-        
-        // Closing
-        let closingLabel = UILabel()
-        closingLabel.text = content.closing
-        closingLabel.font = UIFont.systemFont(ofSize: 12)
-        closingLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(closingLabel)
-        
-        NSLayoutConstraint.activate([
-            closingLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            closingLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor)
-        ])
-        currentY += 40
-        
-        // Signature
-        let signatureLabel = UILabel()
-        signatureLabel.text = content.signature
-        signatureLabel.font = UIFont.systemFont(ofSize: 12)
-        signatureLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(signatureLabel)
-        
-        NSLayoutConstraint.activate([
-            signatureLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            signatureLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor)
-        ])
+
+    private func editorialScriptFont(size: CGFloat) -> UIFont {
+        let candidates = [
+            "SnellRoundhand",
+            "SnellRoundhand-Black",
+            "BradleyHandITCTT-Bold",
+            "Savoye LET",
+            "Zapfino"
+        ]
+        for name in candidates {
+            if let font = UIFont(name: name, size: size) {
+                return font
+            }
+        }
+        return UIFont.italicSystemFont(ofSize: size)
+    }
+
+    private func editorialFullName() -> String {
+        let fullName = "\(userProfile.personalInfo.firstName) \(userProfile.personalInfo.lastName)"
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return fullName.isEmpty ? "Ole Goodwin" : fullName
+    }
+
+    private func editorialRole() -> String {
+        userProfile.personalInfo.title.isEmpty ? "Graphic Designer" : userProfile.personalInfo.title
+    }
+
+    private func editorialEmailFallback() -> String {
+        userProfile.personalInfo.email.isEmpty ? "ole.goodwin@gmail.com" : userProfile.personalInfo.email
+    }
+
+    private func editorialPhoneFallback() -> String {
+        userProfile.personalInfo.phone.isEmpty ? "+1-202-555-0127" : userProfile.personalInfo.phone
+    }
+
+    private func editorialFullAddress() -> String {
+        let address = userProfile.personalInfo.address
+        let pieces = [address.street, address.city, address.postalCode, address.country]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return pieces.isEmpty ? "597 Jon Pine Leschburgh, MD" : pieces.joined(separator: ", ")
+    }
+
+    private func editorialCompanyAddress() -> String {
+        "123 Street Name, Town/City,\nState/Country, Post/Zip"
+    }
+
+    private func editorialSocialLinks() -> [String] {
+        let slug: String = {
+            let combined = "\(userProfile.personalInfo.firstName)\(userProfile.personalInfo.lastName)"
+                .lowercased()
+                .replacingOccurrences(of: " ", with: "")
+            return combined.isEmpty ? "olegoodwin" : combined
+        }()
+        return [
+            "facebook.com/\(slug)",
+            "twitter.com/\(slug)",
+            "dribbble.com/\(slug)"
+        ]
     }
 }
 
@@ -1848,6 +3064,7 @@ class ModernTemplatePDFRenderer {
     private var isModernAquaTemplate: Bool { template.id == "modern_aqua" }
     private var isModernEdgeTemplate: Bool { template.id == "modern_edge" }
     private var isModernGridTemplate: Bool { template.id == "modern_grid" }
+    private var isModernSlateTemplate: Bool { template.id == "modern_slate" }
     
     // Colors and accents for modern template variants
     private var sidebarColor: UIColor {
@@ -2022,6 +3239,11 @@ class ModernTemplatePDFRenderer {
         
         if isModernAquaTemplate {
             drawModernAquaTemplate()
+            return
+        }
+
+        if isModernSlateTemplate {
+            drawModernSlateTemplate()
             return
         }
         
@@ -2475,7 +3697,7 @@ class ModernTemplatePDFRenderer {
             currentY += headingFont.lineHeight + 8
 
             let summaryText = userProfile.personalInfo.summary.isEmpty
-                ? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+                ? "Add your About Me text in your profile to personalize this section."
                 : userProfile.personalInfo.summary
             currentY += drawMultilineText(summaryText, at: CGPoint(x: rightContentX, y: currentY), font: bodyFont, color: UIColor(hex: "#2A2A2A"), maxWidth: rightContentWidth, lineSpacing: 3)
             currentY += 14
@@ -2593,7 +3815,7 @@ class ModernTemplatePDFRenderer {
         let lastName = userProfile.personalInfo.lastName.isEmpty ? "Hickson" : userProfile.personalInfo.lastName
         let role = userProfile.personalInfo.title.isEmpty ? "Game Developer" : userProfile.personalInfo.title
         let summary = userProfile.personalInfo.summary.isEmpty
-            ? "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s."
+            ? "Add your About Me text in your profile to personalize this section."
             : userProfile.personalInfo.summary
 
         _ = drawMultilineText(
@@ -2714,6 +3936,576 @@ class ModernTemplatePDFRenderer {
                 maxY: contentBottom
             )
         }
+    }
+
+    private func drawModernSlateTemplate() {
+        let headerHeight: CGFloat = 216
+        let leftColumnRect = CGRect(x: 38, y: 0, width: 214, height: pageSize.height)
+        let rightContentX = leftColumnRect.maxX + 20
+        let rightContentWidth = pageSize.width - rightContentX - 26
+
+        let headerColor = UIColor(hex: "#6F6D6B")
+        let leftColumnColor = UIColor(hex: "#D7D7D9")
+        let darkText = UIColor(hex: "#222224")
+        let mediumText = UIColor(hex: "#4F4F53")
+
+        UIColor.white.setFill()
+        UIBezierPath(rect: CGRect(origin: .zero, size: pageSize)).fill()
+
+        headerColor.setFill()
+        UIBezierPath(rect: CGRect(x: 0, y: 0, width: pageSize.width, height: headerHeight)).fill()
+
+        leftColumnColor.setFill()
+        UIBezierPath(rect: leftColumnRect).fill()
+
+        let profileRect = CGRect(
+            x: leftColumnRect.minX + 34,
+            y: 42,
+            width: 146,
+            height: 146
+        )
+        drawModernSlateProfileImage(in: profileRect)
+
+        let firstName = userProfile.personalInfo.firstName.isEmpty ? "Jonathan" : userProfile.personalInfo.firstName
+        let lastName = userProfile.personalInfo.lastName.isEmpty ? "Patterson" : userProfile.personalInfo.lastName
+        let role = userProfile.personalInfo.title.isEmpty ? "Art Director" : userProfile.personalInfo.title
+
+        let firstNameFont = ModernTemplatePDFRenderer.createModernFont(size: 25, weight: .medium)
+        let lastNameFont = ModernTemplatePDFRenderer.createModernFont(size: 52, weight: .bold)
+        let roleFont = ModernTemplatePDFRenderer.createModernFont(size: 16, weight: .medium)
+
+        _ = drawRightAlignedText(
+            firstName.uppercased(),
+            at: CGPoint(x: rightContentX, y: 70),
+            font: firstNameFont,
+            color: UIColor.white.withAlphaComponent(0.95),
+            maxWidth: rightContentWidth
+        )
+        _ = drawRightAlignedText(
+            lastName.uppercased(),
+            at: CGPoint(x: rightContentX, y: 102),
+            font: lastNameFont,
+            color: UIColor.white,
+            maxWidth: rightContentWidth
+        )
+        _ = drawRightAlignedText(
+            role,
+            at: CGPoint(x: rightContentX, y: 162),
+            font: roleFont,
+            color: UIColor.white.withAlphaComponent(0.9),
+            maxWidth: rightContentWidth
+        )
+
+        var leftY = profileRect.maxY + 34
+        let leftContentX = leftColumnRect.minX + 22
+        let leftContentWidth = leftColumnRect.width - 44
+
+        if includesSection(.education) {
+            leftY = drawModernSlateSidebarHeader(
+                "EDUCATION",
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth,
+                color: darkText
+            )
+            leftY += 10
+            leftY = drawModernSlateEducationSection(
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth
+            )
+            leftY += 18
+        }
+
+        if includesSection(.skills) {
+            leftY = drawModernSlateSidebarHeader(
+                "SKILLS",
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth,
+                color: darkText
+            )
+            leftY += 10
+            leftY = drawModernSlateSkillsSection(
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth
+            )
+            leftY += 18
+        }
+
+        if includesSection(.languages) {
+            leftY = drawModernSlateSidebarHeader(
+                "LANGUAGES",
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth,
+                color: darkText
+            )
+            leftY += 10
+            leftY = drawModernSlateLanguagesSection(
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth
+            )
+            leftY += 18
+        }
+
+        if includesSection(.personalInfo) {
+            leftY = drawModernSlateSidebarHeader(
+                "CONTACT",
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth,
+                color: darkText
+            )
+            leftY += 10
+            _ = drawModernSlateContactSection(
+                at: CGPoint(x: leftContentX, y: leftY),
+                maxWidth: leftContentWidth
+            )
+        }
+
+        var rightY: CGFloat = headerHeight + 22
+
+        if includesSection(.summary) {
+            rightY = drawModernSlateContentHeader(
+                "PROFILE INFO",
+                at: CGPoint(x: rightContentX, y: rightY),
+                maxWidth: rightContentWidth,
+                color: darkText
+            )
+            rightY += 10
+
+            let summaryText = userProfile.personalInfo.summary.isEmpty
+                ? "Creative designer with strong conceptual thinking, clear communication and a reliable execution style. Focused on translating ideas into visual systems that perform in real business contexts."
+                : userProfile.personalInfo.summary
+            rightY += drawMultilineText(
+                summaryText,
+                at: CGPoint(x: rightContentX, y: rightY),
+                font: ModernTemplatePDFRenderer.createModernFont(size: 10.7, weight: .regular),
+                color: mediumText,
+                maxWidth: rightContentWidth,
+                lineSpacing: 2
+            )
+            rightY += 18
+        }
+
+        if includesSection(.workExperience) {
+            rightY = drawModernSlateContentHeader(
+                "EXPERIENCE",
+                at: CGPoint(x: rightContentX, y: rightY),
+                maxWidth: rightContentWidth,
+                color: darkText
+            )
+            rightY += 11
+
+            let entries = Array(getExperienceEntries().prefix(3))
+            let timelineX = rightContentX + 5
+
+            for (index, entry) in entries.enumerated() {
+                let isLast = index == entries.count - 1
+                let blockHeight = drawModernSlateExperienceEntry(
+                    entry,
+                    at: CGPoint(x: rightContentX, y: rightY),
+                    maxWidth: rightContentWidth,
+                    timelineX: timelineX,
+                    isLast: isLast
+                )
+                rightY += blockHeight + 10
+            }
+
+            rightY += 4
+        }
+
+        if includesSection(.certificates) || includesSection(.projects) {
+            rightY = drawModernSlateContentHeader(
+                "ACHIEVEMENT",
+                at: CGPoint(x: rightContentX, y: rightY),
+                maxWidth: rightContentWidth,
+                color: darkText
+            )
+            rightY += 10
+            _ = drawModernSlateAchievementSection(
+                at: CGPoint(x: rightContentX, y: rightY),
+                maxWidth: rightContentWidth
+            )
+        }
+    }
+
+    private func drawModernSlateProfileImage(in rect: CGRect) {
+        if let profileImageData = userProfile.personalInfo.profileImageData,
+           let image = UIImage(data: profileImageData),
+           let context = UIGraphicsGetCurrentContext() {
+            context.saveGState()
+            UIBezierPath(ovalIn: rect).addClip()
+
+            let imageAspectRatio = image.size.width / image.size.height
+            let targetAspectRatio = rect.width / rect.height
+            let drawRect: CGRect
+
+            if imageAspectRatio > targetAspectRatio {
+                let drawHeight = rect.height
+                let drawWidth = drawHeight * imageAspectRatio
+                drawRect = CGRect(
+                    x: rect.minX + ((rect.width - drawWidth) / 2),
+                    y: rect.minY,
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            } else {
+                let drawWidth = rect.width
+                let drawHeight = drawWidth / imageAspectRatio
+                drawRect = CGRect(
+                    x: rect.minX,
+                    y: rect.minY + ((rect.height - drawHeight) / 2),
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            }
+
+            image.draw(in: drawRect)
+            context.restoreGState()
+        } else {
+            UIColor(hex: "#A9A9AB").setFill()
+            UIBezierPath(ovalIn: rect).fill()
+
+            UIColor(hex: "#767679").setFill()
+            UIBezierPath(ovalIn: CGRect(x: rect.midX - 18, y: rect.minY + 30, width: 36, height: 36)).fill()
+            UIBezierPath(
+                roundedRect: CGRect(x: rect.midX - 26, y: rect.minY + 72, width: 52, height: 36),
+                cornerRadius: 18
+            ).fill()
+        }
+
+        UIColor.white.setStroke()
+        let whiteRing = UIBezierPath(ovalIn: rect.insetBy(dx: -8, dy: -8))
+        whiteRing.lineWidth = 10
+        whiteRing.stroke()
+
+        UIColor(hex: "#CDCDD0").setStroke()
+        let outerRing = UIBezierPath(ovalIn: rect.insetBy(dx: -16, dy: -16))
+        outerRing.lineWidth = 2
+        outerRing.stroke()
+    }
+
+    private func drawModernSlateSidebarHeader(_ text: String, at point: CGPoint, maxWidth: CGFloat, color: UIColor) -> CGFloat {
+        let font = ModernTemplatePDFRenderer.createModernFont(size: 13.5, weight: .bold)
+        let titleSize = text.size(withAttributes: [.font: font])
+        _ = drawText(text, at: point, font: font, color: color)
+
+        let lineY = point.y + (font.lineHeight * 0.56)
+        color.withAlphaComponent(0.35).setStroke()
+        let line = UIBezierPath()
+        line.move(to: CGPoint(x: point.x + titleSize.width + 12, y: lineY))
+        line.addLine(to: CGPoint(x: point.x + maxWidth, y: lineY))
+        line.lineWidth = 1
+        line.stroke()
+
+        return point.y + font.lineHeight
+    }
+
+    private func drawModernSlateContentHeader(_ text: String, at point: CGPoint, maxWidth: CGFloat, color: UIColor) -> CGFloat {
+        let font = ModernTemplatePDFRenderer.createModernFont(size: 15, weight: .bold)
+        let titleSize = text.size(withAttributes: [.font: font])
+        _ = drawText(text, at: point, font: font, color: color)
+
+        let lineY = point.y + (font.lineHeight * 0.58)
+        color.withAlphaComponent(0.3).setStroke()
+        let line = UIBezierPath()
+        line.move(to: CGPoint(x: point.x + titleSize.width + 12, y: lineY))
+        line.addLine(to: CGPoint(x: point.x + maxWidth, y: lineY))
+        line.lineWidth = 1
+        line.stroke()
+
+        return point.y + font.lineHeight
+    }
+
+    private func drawModernSlateEducationSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let yearFont = ModernTemplatePDFRenderer.createModernFont(size: 10.2, weight: .medium)
+        let titleFont = ModernTemplatePDFRenderer.createModernFont(size: 11.2, weight: .bold)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 9.8, weight: .regular)
+        var y = point.y
+
+        for entry in getEducationEntries().prefix(2) {
+            let dateText = modernSlateDateRange(from: entry.dateRange)
+            _ = drawText(dateText, at: CGPoint(x: point.x, y: y), font: yearFont, color: UIColor(hex: "#4B4B4F"))
+            y += yearFont.lineHeight + 1
+
+            _ = drawMultilineText(
+                entry.degree.uppercased(),
+                at: CGPoint(x: point.x, y: y),
+                font: titleFont,
+                color: UIColor(hex: "#262628"),
+                maxWidth: maxWidth,
+                lineSpacing: 1
+            )
+            y += titleFont.lineHeight + 2
+
+            let institution = entry.institution.isEmpty ? "WARDIERE UNIVERSITY" : entry.institution
+            y += drawMultilineText(
+                institution,
+                at: CGPoint(x: point.x, y: y),
+                font: bodyFont,
+                color: UIColor(hex: "#505055"),
+                maxWidth: maxWidth,
+                lineSpacing: 1
+            )
+            y += 4
+
+            UIColor(hex: "#2E2E31").setFill()
+            UIBezierPath(ovalIn: CGRect(x: point.x, y: y + 4, width: 3, height: 3)).fill()
+
+            let noteText = entry.grade.isEmpty ? "Graduated in \(entry.degree)." : "Grade: \(entry.grade)"
+            y += drawMultilineText(
+                noteText,
+                at: CGPoint(x: point.x + 10, y: y),
+                font: bodyFont,
+                color: UIColor(hex: "#59595D"),
+                maxWidth: maxWidth - 10,
+                lineSpacing: 1
+            )
+            y += 11
+        }
+
+        return y
+    }
+
+    private func drawModernSlateSkillsSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let font = ModernTemplatePDFRenderer.createModernFont(size: 10.4, weight: .medium)
+        var y = point.y
+
+        for skill in getSkillsList().prefix(6) {
+            UIColor(hex: "#2E2E31").setFill()
+            UIBezierPath(ovalIn: CGRect(x: point.x, y: y + 4, width: 3.2, height: 3.2)).fill()
+            y += drawMultilineText(
+                skill,
+                at: CGPoint(x: point.x + 10, y: y),
+                font: font,
+                color: UIColor(hex: "#2F2F32"),
+                maxWidth: maxWidth - 10,
+                lineSpacing: 1
+            )
+            y += 5
+        }
+
+        return y
+    }
+
+    private func drawModernSlateLanguagesSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let font = ModernTemplatePDFRenderer.createModernFont(size: 10.2, weight: .medium)
+        var y = point.y
+
+        let languages: [String] = {
+            if userProfile.languages.isEmpty {
+                return ["English", "German (basic)", "Spanish (basic)"]
+            }
+
+            return userProfile.languages.prefix(4).map { language in
+                let suffix: String
+                switch language.proficiencyLevel {
+                case .elementary: suffix = " (basic)"
+                case .intermediate: suffix = " (intermediate)"
+                case .upperIntermediate: suffix = " (upper-intermediate)"
+                case .advanced: suffix = " (advanced)"
+                case .proficient: suffix = " (proficient)"
+                case .native: suffix = " (native)"
+                }
+                return "\(language.name)\(suffix)"
+            }
+        }()
+
+        for language in languages {
+            UIColor(hex: "#2E2E31").setFill()
+            UIBezierPath(ovalIn: CGRect(x: point.x, y: y + 4, width: 3.2, height: 3.2)).fill()
+            y += drawMultilineText(
+                language,
+                at: CGPoint(x: point.x + 10, y: y),
+                font: font,
+                color: UIColor(hex: "#2F2F32"),
+                maxWidth: maxWidth - 10,
+                lineSpacing: 1
+            )
+            y += 5
+        }
+
+        return y
+    }
+
+    private func drawModernSlateContactSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let font = ModernTemplatePDFRenderer.createModernFont(size: 10.2, weight: .medium)
+        var y = point.y
+
+        let address = userProfile.personalInfo.address
+        let location = [address.street, address.city].filter { !$0.isEmpty }.joined(separator: ", ")
+
+        let rows: [(String, String)] = [
+            ("phone.fill", userProfile.personalInfo.phone.isEmpty ? "+123-456-7890" : userProfile.personalInfo.phone),
+            ("envelope.fill", userProfile.personalInfo.email.isEmpty ? "hello@reallygreatsite.com" : userProfile.personalInfo.email),
+            ("location.fill", location.isEmpty ? "123 Anywhere St., Any City" : location)
+        ]
+
+        for row in rows {
+            let iconRect = CGRect(x: point.x, y: y, width: 13, height: 13)
+            if let symbol = UIImage(
+                systemName: row.0,
+                withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+            ) {
+                symbol.withTintColor(UIColor(hex: "#353538"), renderingMode: .alwaysOriginal).draw(in: iconRect)
+            }
+
+            y += drawMultilineText(
+                row.1,
+                at: CGPoint(x: point.x + 18, y: y),
+                font: font,
+                color: UIColor(hex: "#353539"),
+                maxWidth: maxWidth - 18,
+                lineSpacing: 1
+            )
+            y += 7
+        }
+
+        return y
+    }
+
+    private func drawModernSlateExperienceEntry(
+        _ entry: ExperienceDisplayEntry,
+        at point: CGPoint,
+        maxWidth: CGFloat,
+        timelineX: CGFloat,
+        isLast: Bool
+    ) -> CGFloat {
+        let titleFont = ModernTemplatePDFRenderer.createModernFont(size: 12, weight: .bold)
+        let companyFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .bold)
+        let dateFont = ModernTemplatePDFRenderer.createModernFont(size: 10.5, weight: .medium)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 10, weight: .regular)
+
+        let textX = point.x + 18
+        var y = point.y
+
+        UIColor(hex: "#6B6B6F").setStroke()
+        let markerRect = CGRect(x: timelineX - 6, y: y + 1, width: 12, height: 12)
+        let marker = UIBezierPath(ovalIn: markerRect)
+        marker.lineWidth = 1.8
+        marker.stroke()
+
+        let dateText = modernSlateDateRange(from: entry.dateRange)
+        _ = drawText(entry.position, at: CGPoint(x: textX, y: y), font: titleFont, color: UIColor(hex: "#222225"))
+        _ = drawRightAlignedText(
+            dateText,
+            at: CGPoint(x: textX, y: y),
+            font: dateFont,
+            color: UIColor(hex: "#66666A"),
+            maxWidth: maxWidth - (textX - point.x)
+        )
+        y += titleFont.lineHeight + 2
+
+        _ = drawText(entry.company.uppercased(), at: CGPoint(x: textX, y: y), font: companyFont, color: UIColor(hex: "#333337"))
+        y += companyFont.lineHeight + 5
+
+        let detail = entry.achievements.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+            ?? "Delivered high-quality design and communication outcomes across multiple projects."
+        y += drawMultilineText(
+            detail,
+            at: CGPoint(x: textX, y: y),
+            font: bodyFont,
+            color: UIColor(hex: "#4D4D52"),
+            maxWidth: maxWidth - (textX - point.x),
+            lineSpacing: 2
+        )
+
+        let height = max(y - point.y, 54)
+        if !isLast {
+            UIColor(hex: "#8A8A8E").setStroke()
+            let line = UIBezierPath()
+            line.move(to: CGPoint(x: timelineX, y: point.y + 13))
+            line.addLine(to: CGPoint(x: timelineX, y: point.y + height + 8))
+            line.lineWidth = 1.4
+            line.stroke()
+        }
+
+        return height
+    }
+
+    private func drawModernSlateAchievementSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let titleFont = ModernTemplatePDFRenderer.createModernFont(size: 10.8, weight: .bold)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 9.8, weight: .regular)
+
+        let items = Array(modernSlateAchievementItems().prefix(2))
+        let spacing: CGFloat = 16
+        let columnWidth = (maxWidth - spacing) / 2
+        var maxBottom = point.y
+
+        for (index, item) in items.enumerated() {
+            let x = point.x + (CGFloat(index) * (columnWidth + spacing))
+            var y = point.y
+
+            UIColor(hex: "#2F2F32").setFill()
+            UIBezierPath(ovalIn: CGRect(x: x, y: y + 5, width: 3.2, height: 3.2)).fill()
+
+            _ = drawText(item.title, at: CGPoint(x: x + 10, y: y), font: titleFont, color: UIColor(hex: "#262629"))
+            y += titleFont.lineHeight + 2
+
+            y += drawMultilineText(
+                item.detail,
+                at: CGPoint(x: x + 10, y: y),
+                font: bodyFont,
+                color: UIColor(hex: "#4E4E53"),
+                maxWidth: columnWidth - 10,
+                lineSpacing: 2
+            )
+
+            maxBottom = max(maxBottom, y)
+        }
+
+        return maxBottom - point.y
+    }
+
+    private func modernSlateAchievementItems() -> [(title: String, detail: String)] {
+        if !userProfile.certificates.isEmpty {
+            return Array(userProfile.certificates.prefix(2)).map { certificate in
+                let year = Calendar.current.component(.year, from: certificate.issueDate)
+                let title = "\(year)"
+                let detail = certificate.issuingOrganization.isEmpty
+                    ? certificate.name
+                    : "\(certificate.name) - \(certificate.issuingOrganization)"
+                return (title: title, detail: detail)
+            }
+        }
+
+        if !userProfile.workExperience.isEmpty {
+            return Array(userProfile.workExperience.prefix(2)).map { entry in
+                let startYear = Calendar.current.component(.year, from: entry.startDate)
+                let endText: String
+                if entry.isCurrentJob {
+                    endText = "Present"
+                } else if let endDate = entry.endDate {
+                    endText = "\(Calendar.current.component(.year, from: endDate))"
+                } else {
+                    endText = "\(startYear)"
+                }
+
+                let detail = entry.achievements.first(where: { !$0.isEmpty }) ?? entry.description
+                return (title: "\(startYear) - \(endText)", detail: detail.isEmpty ? entry.company : detail)
+            }
+        }
+
+        return [
+            (
+                title: "2013 - 2015",
+                detail: "Reduced production costs through process improvements during internship."
+            ),
+            (
+                title: "2015 - 2020",
+                detail: "Managed high-impact client projects with measurable business value."
+            )
+        ]
+    }
+
+    private func modernSlateDateRange(from rawDateRange: String) -> String {
+        var cleaned = rawDateRange.trimmingCharacters(in: .whitespacesAndNewlines)
+        cleaned = cleaned.replacingOccurrences(of: "(", with: "")
+        cleaned = cleaned.replacingOccurrences(of: ")", with: "")
+        cleaned = cleaned.replacingOccurrences(of: "-", with: " - ")
+
+        while cleaned.contains("  ") {
+            cleaned = cleaned.replacingOccurrences(of: "  ", with: " ")
+        }
+
+        return cleaned
     }
 
     private func drawModernGridContactCell(
@@ -2888,19 +4680,19 @@ class ModernTemplatePDFRenderer {
                     title: "Diploma in Computer Engineering",
                     institution: "University Name 01",
                     period: "2010-2012",
-                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry."
+                    summary: "Add your education details in your profile to personalize this section."
                 ),
                 (
                     title: "Bachelor in Computer Engineering",
                     institution: "University Name 02",
                     period: "2012-2016",
-                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry."
+                    summary: "Add your education details in your profile to personalize this section."
                 ),
                 (
                     title: "Master in Computer Engineering",
                     institution: "University Name 03",
                     period: "2016-2018",
-                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry."
+                    summary: "Add your education details in your profile to personalize this section."
                 )
             ]
         }
@@ -2923,22 +4715,22 @@ class ModernTemplatePDFRenderer {
                 (
                     position: "Sr. Game Developer",
                     companyAndPeriod: "Apple | 2023-Present",
-                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                    summary: "Add your work experience details in your profile to personalize this section."
                 ),
                 (
                     position: "Game Developer",
                     companyAndPeriod: "Cisco System | 2022-2023",
-                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                    summary: "Add your work experience details in your profile to personalize this section."
                 ),
                 (
                     position: "Freelance As A Game Developer",
                     companyAndPeriod: "Microsoft | 2021-2022",
-                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                    summary: "Add your work experience details in your profile to personalize this section."
                 ),
                 (
                     position: "Jr. Game Developer",
                     companyAndPeriod: "Oracle | 2019-2021",
-                    summary: "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the 1500s."
+                    summary: "Add your work experience details in your profile to personalize this section."
                 )
             ]
         }
@@ -3356,8 +5148,8 @@ class ModernTemplatePDFRenderer {
         currentY += 12
         
         // About text
-        let aboutText = userProfile.personalInfo.summary.isEmpty ? 
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pharetra in lorem at laoreet. Donec hendrerit libero eget est tempor, quis tempus arcu elementum." : 
+        let aboutText = userProfile.personalInfo.summary.isEmpty ?
+            "Add your About Me text in your profile to personalize this section." :
             userProfile.personalInfo.summary
         
         let maxWidth = sidebarWidth - (contentPadding * 2)
@@ -5066,7 +6858,7 @@ class ProfessionalTemplatePDFRenderer {
             let summaryWidth = pageSize.width - summaryX - margin
 
             let summaryText = userProfile.personalInfo.summary.isEmpty ?
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit." :
+                "Add your About Me text in your profile to personalize this section." :
                 userProfile.personalInfo.summary
 
             drawMultilineText(summaryText, at: CGPoint(x: summaryX, y: currentY + 20), font: contentFont, color: textColor, maxWidth: summaryWidth)
@@ -5223,8 +7015,8 @@ class ProfessionalTemplatePDFRenderer {
         // Experience entries
         let experienceEntries = userProfile.workExperience.isEmpty ? [
             ("POSITION TITLE HERE", "Company Location goes here", "2016-2017", [
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi",
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi"
+                "Add your key achievements in your profile to personalize this section.",
+                "Update your profile with measurable results and responsibilities."
             ])
         ] : Array(userProfile.workExperience.prefix(3).map { experience in
             let dateFormatter = DateFormatter()

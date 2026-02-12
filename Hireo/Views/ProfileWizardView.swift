@@ -132,6 +132,10 @@ struct PersonalInfoStep: View {
                     TextField(NSLocalizedString("profile.phone", comment: ""), text: $profile.personalInfo.phone)
                         .keyboardType(.phonePad)
                         .textFieldStyle(.roundedBorder)
+
+                    TextField("About Me", text: $profile.personalInfo.summary, axis: .vertical)
+                        .lineLimit(3...6)
+                        .textFieldStyle(.roundedBorder)
                 }
             }
             .cardStyle()

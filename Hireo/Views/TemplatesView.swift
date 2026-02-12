@@ -60,6 +60,12 @@ struct TemplatesView: View {
     @State private var showingCVTemplatePicker = false
     @State private var showingCoverLetterTemplatePicker = false
     @State private var animateIn = false
+
+    private var greetingText: String {
+        let firstName = dataManager.userProfile?.personalInfo.firstName
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return firstName.isEmpty ? "Hallo 👋" : "Hallo \(firstName) 👋"
+    }
     
     var body: some View {
         NavigationStack {
@@ -148,7 +154,7 @@ struct TemplatesView: View {
     
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Hello 👋")
+            Text(greetingText)
                 .font(.system(size: 38, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.white.opacity(0.92))
             Text(selectedTab.subtitle)
@@ -788,11 +794,10 @@ struct CoverLetterTemplateDetailView: View {
     @EnvironmentObject private var dataManager: DataManager
     let template: CoverLetterTemplate
     @State private var showingTemplateCustomization = false
-    @State private var isGenerating = false
+    @State private var showingCoverLetterCreation = false
     @State private var previewPDFData: Data?
     @State private var errorMessage: String?
     @State private var showingError = false
-    @State private var showingPDFPreview = false
     
     var body: some View {
         NavigationStack {
@@ -833,17 +838,13 @@ struct CoverLetterTemplateDetailView: View {
                     
                     // Action Buttons
                     VStack(spacing: 16) {
-                        Button(action: generateCoverLetter) {
+                        Button {
+                            showingCoverLetterCreation = true
+                        } label: {
                             HStack {
-                                if isGenerating {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "arrow.down.doc.fill")
-                                        .font(.system(size: 16, weight: .semibold))
-                                }
-                                Text(isGenerating ? "Generating..." : "Generate Cover Letter")
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("Create Cover Letter")
                                     .font(.headline)
                                     .fontWeight(.semibold)
                             }
@@ -853,7 +854,7 @@ struct CoverLetterTemplateDetailView: View {
                             .foregroundColor(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(isGenerating || dataManager.userProfile == nil)
+                        .disabled(dataManager.userProfile == nil)
                         
                         Button("Customize Template") {
                             showingTemplateCustomization = true
@@ -891,12 +892,10 @@ struct CoverLetterTemplateDetailView: View {
             }
         }
         .sheet(isPresented: $showingTemplateCustomization) {
-            CoverLetterTemplateCustomizationView(template: template)
+            CoverLetterTemplateCustomizationView(template: template, mode: .customize)
         }
-        .sheet(isPresented: $showingPDFPreview) {
-            if let pdfData = previewPDFData {
-                PDFPreviewView(pdfData: pdfData, title: "\(template.name) Cover Letter")
-            }
+        .sheet(isPresented: $showingCoverLetterCreation) {
+            CoverLetterTemplateCustomizationView(template: template, mode: .create)
         }
         .alert("Error", isPresented: $showingError) {
             Button("OK") { }
@@ -931,48 +930,6 @@ struct CoverLetterTemplateDetailView: View {
                 }
             } catch {
                 print("Failed to generate preview for cover letter template \(template.name): \(error)")
-            }
-        }
-    }
-    
-    private func generateCoverLetter() {
-        guard let userProfile = dataManager.userProfile else { return }
-        
-        isGenerating = true
-        
-        Task {
-            do {
-                let sampleContent = CoverLetterContent()
-                
-                var coverLetterDocument = CoverLetterDocument(
-                    userProfileId: userProfile.id,
-                    templateId: template.id
-                )
-                coverLetterDocument.colorScheme = template.colorSchemes.first ?? .blue
-                coverLetterDocument.content = sampleContent
-                dataManager.saveCoverLetterDocument(coverLetterDocument)
-                
-                let pdfDocument = try await PDFGenerationService.shared.generateCoverLetter(
-                    userProfile: userProfile,
-                    template: template,
-                    content: sampleContent
-                )
-                
-                guard let pdfData = pdfDocument.dataRepresentation() else {
-                    throw PDFGenerationError.renderingFailed("Failed to get PDF data")
-                }
-                
-                await MainActor.run {
-                    self.previewPDFData = pdfData
-                    self.showingPDFPreview = true
-                    self.isGenerating = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.showingError = true
-                    self.isGenerating = false
-                }
             }
         }
     }

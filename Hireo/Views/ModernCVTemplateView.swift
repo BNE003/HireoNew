@@ -50,8 +50,8 @@ struct ModernCVTemplateView: View {
                             .foregroundColor(.white)
                     }
                     
-                    Text(userProfile.personalInfo.summary.isEmpty ? 
-                         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pharetra in lorem at laoreet. Donec hendrerit libero eget est tempor, quis tempus arcu elementum." : 
+                    Text(userProfile.personalInfo.summary.isEmpty ?
+                         "Add your About Me text in your profile to personalize this section." :
                          userProfile.personalInfo.summary)
                         .font(.system(size: 11))
                         .foregroundColor(.white)

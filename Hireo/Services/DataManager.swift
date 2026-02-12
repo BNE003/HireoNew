@@ -168,6 +168,17 @@ class DataManager: ObservableObject {
             }(),
             {
                 var template = CVTemplate(
+                    id: "modern_slate",
+                    name: "Modern Slate",
+                    description: "Studio-inspired resume with a slate hero header and editorial sidebar",
+                    category: .modern
+                )
+                template.colorSchemes = [.gray, .black, .blue]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
+            {
+                var template = CVTemplate(
                     id: "modern_mono",
                     name: "Modern Mono",
                     description: "Editorial two-column CV with bold typography and neutral palette",
@@ -186,6 +197,39 @@ class DataManager: ObservableObject {
         coverLetterTemplates = [
             CoverLetterTemplate(id: "professional", name: "Professional", description: "Standard business format", category: .professional),
             CoverLetterTemplate(id: "modern", name: "Modern", description: "Contemporary design", category: .modern),
+            {
+                var template = CoverLetterTemplate(
+                    id: "modern_mono_letter",
+                    name: "Modern Mono",
+                    description: "Matching editorial cover letter with clean left panel and bold title",
+                    category: .professional
+                )
+                template.colorSchemes = [.gray, .black, .blue]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
+            {
+                var template = CoverLetterTemplate(
+                    id: "modern_editorial",
+                    name: "Modern Editorial",
+                    description: "Editorial one-page cover letter with profile hero and side recipient panel",
+                    category: .modern
+                )
+                template.colorSchemes = [.gray, .black, .orange]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
+            {
+                var template = CoverLetterTemplate(
+                    id: "modern_guided_letter",
+                    name: "Modern Guided",
+                    description: "Structured modern cover letter with guided writing sections and clean accent layout",
+                    category: .modern
+                )
+                template.colorSchemes = [.blue, .teal, .black, .gray]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
             CoverLetterTemplate(id: "classic", name: "Classic", description: "Traditional format", category: .classic)
         ]
     }

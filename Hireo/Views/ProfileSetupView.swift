@@ -33,6 +33,11 @@ struct ProfileSetupView: View {
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                     }
+
+                    Section("About Me") {
+                        TextField("Professional Summary", text: $userProfile.personalInfo.summary, axis: .vertical)
+                            .lineLimit(3...6)
+                    }
                     
                     Section("Address") {
                         TextField("Street", text: $userProfile.personalInfo.address.street)

@@ -1,0 +1,23 @@
+{
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/ProfileWizardView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/ProfileWizardView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/ProfileWizardView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/ProfileWizardView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/ProfileWizardView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/ProfileWizardView.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/SettingsView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/SettingsView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/SettingsView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/SettingsView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/SettingsView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/SettingsView.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/TemplatesView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/TemplatesView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/TemplatesView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/TemplatesView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/TemplatesView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedData/Build/Intermediates.noindex/Hireo.build/Debug-iphoneos/Hireo.build/Objects-normal/arm64/TemplatesView.swiftdeps"
+  }
+}

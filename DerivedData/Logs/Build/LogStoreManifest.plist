@@ -5,6 +5,49 @@
 	<key>logFormatVersion</key>
 	<integer>11</integer>
 	<key>logs</key>
-	<dict/>
+	<dict>
+		<key>F93AD695-67D2-45D1-A3AB-D680A5CB999E</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>F93AD695-67D2-45D1-A3AB-D680A5CB999E.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>19</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>4</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>Hireo project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>Hireo</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project Hireo with scheme Hireo and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>792628049.77542901</real>
+			<key>timeStoppedRecording</key>
+			<real>792628070.04750705</real>
+			<key>title</key>
+			<string>Building project Hireo with scheme Hireo and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>F93AD695-67D2-45D1-A3AB-D680A5CB999E</string>
+		</dict>
+	</dict>
 </dict>
 </plist>
