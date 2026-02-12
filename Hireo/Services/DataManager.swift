@@ -155,6 +155,17 @@ class DataManager: ObservableObject {
                 template.fontFamilies = [.modern, .system, .serif]
                 return template
             }(),
+            {
+                var template = CVTemplate(
+                    id: "modern_mono",
+                    name: "Modern Mono",
+                    description: "Editorial two-column CV with bold typography and neutral palette",
+                    category: .professional
+                )
+                template.colorSchemes = [.gray, .black, .blue]
+                template.fontFamilies = [.modern, .system]
+                return template
+            }(),
             CVTemplate(id: "classic", name: "Classic", description: "Traditional professional layout", category: .classic),
             CVTemplate(id: "creative", name: "Creative", description: "Bold and eye-catching design", category: .creative),
             CVTemplate(id: "professional", name: "Professional", description: "Elegant two-column layout with modern styling", category: .professional),

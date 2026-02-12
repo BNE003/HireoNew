@@ -3841,6 +3841,8 @@ class ProfessionalTemplatePDFRenderer {
     let template: CVTemplate
     let settings: CVSettings
     
+    private var isModernMonoTemplate: Bool { template.id == "modern_mono" }
+    
     // Constants for professional template design
     private let pageSize = PDFGenerationService.dinA4Size
     private let margin: CGFloat = 30
@@ -3882,8 +3884,12 @@ class ProfessionalTemplatePDFRenderer {
         UIGraphicsBeginPDFContextToData(pdfData, pageRect, nil)
         UIGraphicsBeginPDFPage()
         
-        // Draw the professional template
-        drawProfessionalTemplate()
+        if isModernMonoTemplate {
+            drawModernMonoTemplate()
+        } else {
+            // Draw the professional template
+            drawProfessionalTemplate()
+        }
         
         UIGraphicsEndPDFContext()
         
@@ -3906,6 +3912,544 @@ class ProfessionalTemplatePDFRenderer {
         
         // Draw main content in two columns
         drawMainContent(startY: currentY)
+    }
+
+    private func drawModernMonoTemplate() {
+        let panelInset: CGFloat = 24
+        let panelRect = CGRect(
+            x: panelInset,
+            y: panelInset,
+            width: pageSize.width - (panelInset * 2),
+            height: pageSize.height - (panelInset * 2)
+        )
+
+        UIColor(hex: "#F4F2EE").setFill()
+        UIBezierPath(rect: panelRect).fill()
+
+        UIColor(hex: "#D9D5CC").setStroke()
+        let panelBorder = UIBezierPath(rect: panelRect)
+        panelBorder.lineWidth = 1
+        panelBorder.stroke()
+
+        let photoRect = CGRect(x: panelRect.minX + 28, y: panelRect.minY + 34, width: 124, height: 124)
+        drawModernMonoProfileImage(in: photoRect)
+
+        let nameX = photoRect.maxX + 34
+        let nameY = photoRect.minY + 2
+        let headerWidth = panelRect.maxX - nameX - 24
+        let displayFont = modernMonoFont(size: 54, weight: .black)
+        let headingFont = modernMonoFont(size: 14, weight: .bold)
+        let bodyFont = modernMonoFont(size: 10.5, weight: .regular)
+
+        let fullName = userProfile.personalInfo.firstName.isEmpty && userProfile.personalInfo.lastName.isEmpty
+            ? "JAMES SMITH"
+            : "\(userProfile.personalInfo.firstName) \(userProfile.personalInfo.lastName)".uppercased()
+        _ = drawText(fullName, at: CGPoint(x: nameX, y: nameY), font: displayFont, color: UIColor(hex: "#131313"))
+
+        if includesSection(.summary) {
+            var summaryY = nameY + displayFont.lineHeight + 10
+            summaryY += drawModernMonoSectionTitle("ABOUT ME", at: CGPoint(x: nameX, y: summaryY), font: headingFont)
+            summaryY += 8
+
+            UIColor(hex: "#DDD8CD").setFill()
+            UIBezierPath(rect: CGRect(x: nameX - 8, y: summaryY + 1, width: 2, height: 52)).fill()
+
+            let summaryText = userProfile.personalInfo.summary.isEmpty
+                ? "Creative professional with strong communication skills, reliable execution and a sharp eye for detail. Looking to contribute to a modern, collaborative team."
+                : userProfile.personalInfo.summary
+            _ = drawMultilineText(
+                summaryText,
+                at: CGPoint(x: nameX, y: summaryY),
+                font: bodyFont,
+                color: UIColor(hex: "#3E3E3E"),
+                maxWidth: headerWidth
+            )
+        }
+
+        let bodyTop = photoRect.maxY + 30
+        let leftPanel = CGRect(
+            x: panelRect.minX + 18,
+            y: bodyTop,
+            width: 178,
+            height: panelRect.maxY - bodyTop - 18
+        )
+
+        UIColor(hex: "#EDE9E2").setFill()
+        UIBezierPath(rect: leftPanel).fill()
+
+        let leftContentX = leftPanel.minX + 14
+        let leftContentWidth = leftPanel.width - 28
+        var leftY = leftPanel.minY + 22
+
+        if includesSection(.personalInfo) {
+            leftY = drawModernMonoContact(at: CGPoint(x: leftContentX, y: leftY), maxWidth: leftContentWidth)
+            leftY += 22
+        }
+
+        if includesSection(.skills) {
+            leftY = drawModernMonoSkills(at: CGPoint(x: leftContentX, y: leftY), maxWidth: leftContentWidth)
+            leftY += 22
+        }
+
+        if includesSection(.languages) {
+            leftY = drawModernMonoLanguages(at: CGPoint(x: leftContentX, y: leftY), maxWidth: leftContentWidth)
+            leftY += 22
+        }
+
+        if includesSection(.certificates) {
+            _ = drawModernMonoAwards(at: CGPoint(x: leftContentX, y: leftY), maxWidth: leftContentWidth)
+        }
+
+        let rightX = leftPanel.maxX + 40
+        let rightWidth = panelRect.maxX - rightX - 24
+        var rightY = bodyTop + 8
+
+        if includesSection(.education) {
+            rightY = drawModernMonoEducation(at: CGPoint(x: rightX, y: rightY), maxWidth: rightWidth)
+            rightY += 20
+        }
+
+        if includesSection(.workExperience) {
+            rightY = drawModernMonoWorkExperience(at: CGPoint(x: rightX, y: rightY), maxWidth: rightWidth)
+            rightY += 20
+        }
+
+        if includesSection(.projects) {
+            _ = drawModernMonoReferences(at: CGPoint(x: rightX, y: rightY), maxWidth: rightWidth)
+        }
+    }
+
+    private func modernMonoFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let candidates: [String]
+        switch weight {
+        case .black, .heavy, .bold:
+            candidates = [
+                "SpaceGrotesk-Bold",
+                "Sora-ExtraBold",
+                "Manrope-ExtraBold",
+                "AvenirNextCondensed-Heavy",
+                "AvenirNext-Bold",
+                "HelveticaNeue-Bold"
+            ]
+        case .semibold, .medium:
+            candidates = [
+                "SpaceGrotesk-Medium",
+                "Sora-SemiBold",
+                "Manrope-SemiBold",
+                "AvenirNext-DemiBold",
+                "HelveticaNeue-Medium"
+            ]
+        default:
+            candidates = [
+                "Inter-Regular",
+                "Manrope-Regular",
+                "AvenirNext-Regular",
+                "HelveticaNeue"
+            ]
+        }
+
+        for name in candidates {
+            if let font = UIFont(name: name, size: size) {
+                return font
+            }
+        }
+
+        return UIFont.systemFont(ofSize: size, weight: weight)
+    }
+
+    @discardableResult
+    private func drawModernMonoSectionTitle(_ text: String, at point: CGPoint, font: UIFont) -> CGFloat {
+        UIColor(hex: "#D9D5CC").setFill()
+        UIBezierPath(rect: CGRect(x: point.x - 8, y: point.y + 2, width: 2, height: font.lineHeight - 2)).fill()
+        _ = drawText(text, at: point, font: font, color: UIColor(hex: "#1C1C1C"))
+        return font.lineHeight
+    }
+
+    private func drawModernMonoContact(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = modernMonoFont(size: 11.5, weight: .bold)
+        let bodyFont = modernMonoFont(size: 10, weight: .regular)
+        var y = point.y
+
+        y += drawModernMonoSectionTitle("CONTACT", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        let phone = userProfile.personalInfo.phone.isEmpty ? "+00 000 000 0000" : userProfile.personalInfo.phone
+        let email = userProfile.personalInfo.email.isEmpty ? "cv@example.com" : userProfile.personalInfo.email
+        let address = formatAddress()
+        let contactText = "\(phone)\n\(email)\n\(address)"
+
+        y += drawMultilineText(
+            contactText,
+            at: CGPoint(x: point.x, y: y),
+            font: bodyFont,
+            color: UIColor(hex: "#404040"),
+            maxWidth: maxWidth
+        )
+
+        return y
+    }
+
+    private func drawModernMonoSkills(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = modernMonoFont(size: 11.5, weight: .bold)
+        let bodyFont = modernMonoFont(size: 9.5, weight: .medium)
+        var y = point.y
+
+        y += drawModernMonoSectionTitle("PRO. SKILLS", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        let skillsData: [(String, CGFloat)] = {
+            let allSkills = userProfile.skills.flatMap { $0.skills }
+            if allSkills.isEmpty {
+                return [
+                    ("Skill Name Here", 0.75),
+                    ("Skill Name Here", 0.68),
+                    ("Skill Name Here", 0.82),
+                    ("Skill Name Here", 0.73),
+                    ("Skill Name Here", 0.80)
+                ]
+            }
+
+            return Array(allSkills.prefix(5)).map { skill in
+                (skill.name, CGFloat(proficiencyLevelToProgress(skill.proficiencyLevel)))
+            }
+        }()
+
+        for (name, progress) in skillsData {
+            _ = drawText(name, at: CGPoint(x: point.x, y: y), font: bodyFont, color: UIColor(hex: "#3A3A3A"))
+            y += bodyFont.lineHeight + 4
+
+            let barWidth = maxWidth - 8
+            let barHeight: CGFloat = 4
+            let barRect = CGRect(x: point.x, y: y, width: barWidth, height: barHeight)
+
+            UIColor(hex: "#C9C9C9").setFill()
+            UIBezierPath(roundedRect: barRect, cornerRadius: 2).fill()
+
+            let fillRect = CGRect(x: point.x, y: y, width: barWidth * max(0.15, min(progress, 1.0)), height: barHeight)
+            UIColor(hex: "#171717").setFill()
+            UIBezierPath(roundedRect: fillRect, cornerRadius: 2).fill()
+
+            y += 16
+        }
+
+        return y
+    }
+
+    private func drawModernMonoLanguages(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = modernMonoFont(size: 11.5, weight: .bold)
+        let bodyFont = modernMonoFont(size: 9.5, weight: .medium)
+        var y = point.y
+
+        y += drawModernMonoSectionTitle("LANGUAGE", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        let languagesData: [(String, CGFloat)] = {
+            if userProfile.languages.isEmpty {
+                return [
+                    ("Language Name", 0.82),
+                    ("Language Name", 0.70),
+                    ("Language Name", 0.86)
+                ]
+            }
+
+            return Array(userProfile.languages.prefix(3)).map { language in
+                let value: CGFloat
+                switch language.proficiencyLevel {
+                case .elementary: value = 0.3
+                case .intermediate: value = 0.5
+                case .upperIntermediate: value = 0.65
+                case .advanced: value = 0.78
+                case .proficient: value = 0.9
+                case .native: value = 1.0
+                }
+                return (language.name, value)
+            }
+        }()
+
+        for (name, progress) in languagesData {
+            _ = drawText(name, at: CGPoint(x: point.x, y: y), font: bodyFont, color: UIColor(hex: "#3A3A3A"))
+            y += bodyFont.lineHeight + 4
+
+            let barWidth = maxWidth - 8
+            let barHeight: CGFloat = 4
+            let barRect = CGRect(x: point.x, y: y, width: barWidth, height: barHeight)
+            UIColor(hex: "#C9C9C9").setFill()
+            UIBezierPath(roundedRect: barRect, cornerRadius: 2).fill()
+
+            let fillRect = CGRect(x: point.x, y: y, width: barWidth * max(0.15, min(progress, 1.0)), height: barHeight)
+            UIColor(hex: "#171717").setFill()
+            UIBezierPath(roundedRect: fillRect, cornerRadius: 2).fill()
+
+            y += 16
+        }
+
+        return y
+    }
+
+    private func drawModernMonoAwards(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = modernMonoFont(size: 11.5, weight: .bold)
+        let bodyFont = modernMonoFont(size: 9.2, weight: .regular)
+        let yearFont = modernMonoFont(size: 9.2, weight: .semibold)
+        var y = point.y
+
+        y += drawModernMonoSectionTitle("AWARDS", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        let awards: [(String, String, String)] = {
+            if userProfile.certificates.isEmpty {
+                return [
+                    ("2013", "Award Name", "Name of the Organization"),
+                    ("2017", "Award Name", "Name of the Organization")
+                ]
+            }
+
+            return Array(userProfile.certificates.prefix(2)).map { certificate in
+                let year = String(Calendar.current.component(.year, from: certificate.issueDate))
+                let organization = certificate.issuingOrganization.isEmpty ? "Organization" : certificate.issuingOrganization
+                return (year, certificate.name, organization)
+            }
+        }()
+
+        for (year, name, organization) in awards {
+            _ = drawText(year, at: CGPoint(x: point.x, y: y), font: yearFont, color: UIColor(hex: "#2E2E2E"))
+            y += yearFont.lineHeight + 2
+            _ = drawText(name, at: CGPoint(x: point.x, y: y), font: bodyFont, color: UIColor(hex: "#383838"))
+            y += bodyFont.lineHeight + 1
+            y += drawMultilineText(
+                organization,
+                at: CGPoint(x: point.x, y: y),
+                font: bodyFont,
+                color: UIColor(hex: "#616161"),
+                maxWidth: maxWidth
+            )
+            y += 10
+        }
+
+        return y
+    }
+
+    private func drawModernMonoEducation(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = modernMonoFont(size: 13.5, weight: .bold)
+        let titleFont = modernMonoFont(size: 10, weight: .semibold)
+        let bodyFont = modernMonoFont(size: 9.2, weight: .regular)
+        var y = point.y
+
+        y += drawModernMonoSectionTitle("EDUCATION", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        let entries: [(String, String, String)] = {
+            if userProfile.education.isEmpty {
+                return [
+                    ("2014-2016", "Education Name Here", "123 Street Name City Name,\nState, Country, 12345"),
+                    ("2012-2014", "Education Name Here", "123 Street Name City Name,\nState, Country, 12345")
+                ]
+            }
+
+            return Array(userProfile.education.prefix(4)).map { education in
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy"
+                let start = formatter.string(from: education.startDate)
+                let end = education.endDate != nil ? formatter.string(from: education.endDate!) : "Present"
+                let details = "\(education.institution)\n\(education.fieldOfStudy)"
+                return ("\(start)-\(end)", education.degree, details)
+            }
+        }()
+
+        let columnSpacing: CGFloat = 20
+        let columnWidth = (maxWidth - columnSpacing) / 2
+        let startY = y
+
+        for (index, entry) in entries.enumerated() {
+            let column = index % 2
+            let row = index / 2
+
+            var entryY = startY + (CGFloat(row) * 74)
+            let entryX = point.x + (CGFloat(column) * (columnWidth + columnSpacing))
+
+            UIColor(hex: "#DDD8CD").setFill()
+            UIBezierPath(rect: CGRect(x: entryX - 7, y: entryY + 1, width: 2, height: 44)).fill()
+
+            _ = drawText(entry.0, at: CGPoint(x: entryX, y: entryY), font: titleFont, color: UIColor(hex: "#252525"))
+            entryY += titleFont.lineHeight + 2
+            _ = drawText(entry.1, at: CGPoint(x: entryX, y: entryY), font: titleFont, color: UIColor(hex: "#343434"))
+            entryY += titleFont.lineHeight + 1
+            _ = drawMultilineText(
+                entry.2,
+                at: CGPoint(x: entryX, y: entryY),
+                font: bodyFont,
+                color: UIColor(hex: "#616161"),
+                maxWidth: columnWidth
+            )
+        }
+
+        let rows = Int(ceil(Double(entries.count) / 2.0))
+        return startY + CGFloat(rows * 74)
+    }
+
+    private func drawModernMonoWorkExperience(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = modernMonoFont(size: 13.5, weight: .bold)
+        let titleFont = modernMonoFont(size: 10, weight: .semibold)
+        let bodyFont = modernMonoFont(size: 9.2, weight: .regular)
+        var y = point.y
+
+        y += drawModernMonoSectionTitle("WORK EXPERIENCE", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        let entries: [(String, String, String, String)] = {
+            if userProfile.workExperience.isEmpty {
+                return [
+                    ("2013-Pre", "Experience Name Here", "123 Street Name City Name, State, Country, 12345", "Delivered measurable business outcomes through ownership, collaboration and solid execution across priorities."),
+                    ("2020-2023", "Experience Name Here", "123 Street Name City Name, State, Country, 12345", "Worked across teams to optimize process quality and improve delivery consistency under deadlines."),
+                    ("2018-2020", "Experience Name Here", "123 Street Name City Name, State, Country, 12345", "Contributed to implementation planning, documentation and stakeholder communication.")
+                ]
+            }
+
+            return Array(userProfile.workExperience.prefix(4)).map { experience in
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy"
+                let start = formatter.string(from: experience.startDate)
+                let end = experience.isCurrentJob ? "Present" : formatter.string(from: experience.endDate ?? Date())
+                let summary = experience.achievements.first ?? experience.description
+                let location = "\(experience.company), \(formatAddress())"
+                return ("\(start)-\(end)", experience.position, location, summary)
+            }
+        }()
+
+        let leftWidth = maxWidth * 0.42
+        let rightWidth = maxWidth - leftWidth - 20
+
+        for entry in entries {
+            let startY = y
+
+            UIColor(hex: "#DDD8CD").setFill()
+            UIBezierPath(rect: CGRect(x: point.x - 7, y: y + 1, width: 2, height: 52)).fill()
+
+            _ = drawText(entry.0, at: CGPoint(x: point.x, y: y), font: titleFont, color: UIColor(hex: "#252525"))
+            y += titleFont.lineHeight + 2
+            _ = drawText(entry.1, at: CGPoint(x: point.x, y: y), font: titleFont, color: UIColor(hex: "#343434"))
+            y += titleFont.lineHeight + 1
+            _ = drawMultilineText(
+                entry.2,
+                at: CGPoint(x: point.x, y: y),
+                font: bodyFont,
+                color: UIColor(hex: "#616161"),
+                maxWidth: leftWidth
+            )
+
+            let rightTextHeight = drawMultilineText(
+                entry.3,
+                at: CGPoint(x: point.x + leftWidth + 20, y: startY),
+                font: bodyFont,
+                color: UIColor(hex: "#414141"),
+                maxWidth: rightWidth
+            )
+
+            let leftBlockHeight = y - startY
+            y = startY + max(leftBlockHeight, rightTextHeight) + 14
+        }
+
+        return y
+    }
+
+    private func drawModernMonoReferences(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        let headingFont = modernMonoFont(size: 13.5, weight: .bold)
+        let titleFont = modernMonoFont(size: 9.8, weight: .semibold)
+        let bodyFont = modernMonoFont(size: 9, weight: .regular)
+        var y = point.y
+
+        y += drawModernMonoSectionTitle("REFERENCE", at: CGPoint(x: point.x, y: y), font: headingFont)
+        y += 10
+
+        let references: [(String, String, String)] = {
+            if userProfile.projects.isEmpty {
+                return [
+                    ("Sonia Marmeladova", "CEO", "123 Street Name City Name,\nState, Country, 12345"),
+                    ("Hindley Earnshaw", "CEO", "123 Street Name City Name,\nState, Country, 12345"),
+                    ("Emma Woodhouse", "CEO", "123 Street Name City Name,\nState, Country, 12345"),
+                    ("Catherine Earnshaw", "CEO", "123 Street Name City Name,\nState, Country, 12345")
+                ]
+            }
+
+            return Array(userProfile.projects.prefix(4)).map { project in
+                let role = project.technologies.first ?? "Project Lead"
+                let location = project.url ?? formatAddress()
+                return (project.name, role, location)
+            }
+        }()
+
+        let columnSpacing: CGFloat = 24
+        let columnWidth = (maxWidth - columnSpacing) / 2
+        let startY = y
+
+        for (index, reference) in references.enumerated() {
+            let column = index % 2
+            let row = index / 2
+
+            let entryX = point.x + CGFloat(column) * (columnWidth + columnSpacing)
+            var entryY = startY + CGFloat(row) * 82
+
+            UIColor(hex: "#DDD8CD").setFill()
+            UIBezierPath(rect: CGRect(x: entryX - 7, y: entryY + 1, width: 2, height: 52)).fill()
+
+            _ = drawText(reference.1, at: CGPoint(x: entryX, y: entryY), font: bodyFont, color: UIColor(hex: "#5F5F5F"))
+            entryY += bodyFont.lineHeight + 1
+            _ = drawText(reference.0, at: CGPoint(x: entryX, y: entryY), font: titleFont, color: UIColor(hex: "#333333"))
+            entryY += titleFont.lineHeight + 2
+            _ = drawMultilineText(
+                reference.2,
+                at: CGPoint(x: entryX, y: entryY),
+                font: bodyFont,
+                color: UIColor(hex: "#5E5E5E"),
+                maxWidth: columnWidth
+            )
+        }
+
+        let rows = Int(ceil(Double(references.count) / 2.0))
+        return startY + CGFloat(rows * 82)
+    }
+
+    private func drawModernMonoProfileImage(in rect: CGRect) {
+        if let profileImageData = userProfile.personalInfo.profileImageData,
+           let image = UIImage(data: profileImageData),
+           let context = UIGraphicsGetCurrentContext() {
+            context.saveGState()
+            UIBezierPath(rect: rect).addClip()
+
+            let imageAspectRatio = image.size.width / image.size.height
+            let rectAspectRatio = rect.width / rect.height
+            let drawRect: CGRect
+
+            if imageAspectRatio > rectAspectRatio {
+                let drawHeight = rect.height
+                let drawWidth = drawHeight * imageAspectRatio
+                drawRect = CGRect(
+                    x: rect.minX + ((rect.width - drawWidth) / 2),
+                    y: rect.minY,
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            } else {
+                let drawWidth = rect.width
+                let drawHeight = drawWidth / imageAspectRatio
+                drawRect = CGRect(
+                    x: rect.minX,
+                    y: rect.minY + ((rect.height - drawHeight) / 2),
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            }
+
+            image.draw(in: drawRect)
+            context.restoreGState()
+        } else {
+            UIColor(hex: "#2A2A2A").setFill()
+            UIBezierPath(rect: rect).fill()
+        }
+
+        UIColor(hex: "#202020").setStroke()
+        let frame = UIBezierPath(rect: rect)
+        frame.lineWidth = 1
+        frame.stroke()
     }
     
     private func drawHeader() -> CGFloat {
@@ -4208,6 +4752,19 @@ class ProfessionalTemplatePDFRenderer {
     }
     
     // Helper methods
+    private func formatAddress() -> String {
+        let address = userProfile.personalInfo.address
+        if address.street.isEmpty && address.city.isEmpty {
+            return "123 Street Name City Name, State, Country, 12345"
+        }
+
+        var components: [String] = []
+        if !address.street.isEmpty { components.append(address.street) }
+        if !address.city.isEmpty { components.append(address.city) }
+        if !address.country.isEmpty { components.append(address.country) }
+        return components.joined(separator: ", ")
+    }
+
     private func proficiencyLevelToProgress(_ level: ProficiencyLevel) -> Double {
         switch level {
         case .beginner:
