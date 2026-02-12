@@ -45,21 +45,7 @@ struct ModernSettingsView: View {
 
 // MARK: - Modern Profile Edit View
 struct ModernProfileEditView: View {
-    @Environment(\.dismiss) private var dismiss
-    
     var body: some View {
-        NavigationStack {
-            Text("Modern Profile Edit - Coming Soon")
-                .font(ModernTheme.Typography.headingMedium)
-                .navigationTitle("Edit Profile")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                    }
-                }
-        }
+        ProfileEditView()
     }
 }
-

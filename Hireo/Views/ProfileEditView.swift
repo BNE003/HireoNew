@@ -10,53 +10,62 @@ import SwiftUI
 struct ProfileEditView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var dataManager: DataManager
-    @State private var userProfile: UserProfile
+    @State private var personalInfo: PersonalInfo
     
     init() {
-        _userProfile = State(initialValue: DataManager.shared.userProfile ?? UserProfile())
+        _personalInfo = State(initialValue: DataManager.shared.userProfile?.personalInfo ?? PersonalInfo())
     }
     
     var body: some View {
         NavigationStack {
             Form {
                 Section("Personal Information") {
-                    TextField("First Name", text: $userProfile.personalInfo.firstName)
-                    TextField("Last Name", text: $userProfile.personalInfo.lastName)
-                    TextField("Job Title", text: $userProfile.personalInfo.title)
-                    TextField("Email", text: $userProfile.personalInfo.email)
+                    TextField("First Name", text: $personalInfo.firstName)
+                    TextField("Last Name", text: $personalInfo.lastName)
+                    TextField("Job Title", text: $personalInfo.title)
+                    TextField("Email", text: $personalInfo.email)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
-                    TextField("Phone", text: $userProfile.personalInfo.phone)
+                    TextField("Phone", text: $personalInfo.phone)
                         .keyboardType(.phonePad)
                 }
                 
                 Section("Address") {
-                    TextField("Street", text: $userProfile.personalInfo.address.street)
-                    TextField("City", text: $userProfile.personalInfo.address.city)
-                    TextField("Postal Code", text: $userProfile.personalInfo.address.postalCode)
-                    TextField("Country", text: $userProfile.personalInfo.address.country)
+                    TextField("Street", text: $personalInfo.address.street)
+                    TextField("City", text: $personalInfo.address.city)
+                    TextField("Postal Code", text: $personalInfo.address.postalCode)
+                    TextField("Country", text: $personalInfo.address.country)
                 }
                 
                 Section("Additional Sections") {
-                    NavigationLink("Education (\(userProfile.education.count))") {
-                        Text("Education editing coming soon")
+                    NavigationLink("Education (\(currentProfile.education.count))") {
+                        EducationEditView()
                     }
                     
-                    NavigationLink("Work Experience (\(userProfile.workExperience.count))") {
-                        Text("Work experience editing coming soon")
+                    NavigationLink("Work Experience (\(currentProfile.workExperience.count))") {
+                        WorkExperienceEditView()
                     }
                     
-                    NavigationLink("Skills") {
-                        Text("Skills editing coming soon")
+                    NavigationLink("Skills (\(skillsCount))") {
+                        SkillsEditView()
                     }
                     
-                    NavigationLink("Projects (\(userProfile.projects.count))") {
+                    NavigationLink("Languages (\(currentProfile.languages.count))") {
+                        LanguagesEditView()
+                    }
+                    
+                    NavigationLink("Projects (\(currentProfile.projects.count))") {
                         Text("Projects editing coming soon")
                     }
                 }
             }
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                if let profile = dataManager.userProfile {
+                    personalInfo = profile.personalInfo
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -66,12 +75,27 @@ struct ProfileEditView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        dataManager.saveUserProfile(userProfile)
+                        saveProfile()
                         dismiss()
                     }
                 }
             }
         }
+    }
+    
+    private var currentProfile: UserProfile {
+        dataManager.userProfile ?? UserProfile()
+    }
+    
+    private var skillsCount: Int {
+        currentProfile.skills.reduce(0) { $0 + $1.skills.count }
+    }
+    
+    private func saveProfile() {
+        var profile = dataManager.userProfile ?? UserProfile()
+        profile.personalInfo = personalInfo
+        profile.lastUpdated = Date()
+        dataManager.saveUserProfile(profile)
     }
 }
 

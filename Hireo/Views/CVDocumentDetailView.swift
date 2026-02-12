@@ -18,6 +18,7 @@ struct CVDocumentDetailView: View {
     @State private var isGenerating = false
     @State private var errorMessage: String?
     @State private var showingError = false
+    @State private var showingProfileEdit = false
     
     var body: some View {
         NavigationStack {
@@ -50,7 +51,7 @@ struct CVDocumentDetailView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Edit") {
-                        // TODO: Navigate to edit view
+                        showingProfileEdit = true
                     }
                 }
             }
@@ -59,6 +60,9 @@ struct CVDocumentDetailView: View {
             if let pdfData = generatedPDFData {
                 PDFPreviewView(pdfData: pdfData, title: document.fileName)
             }
+        }
+        .sheet(isPresented: $showingProfileEdit) {
+            ProfileEditView()
         }
         .alert("Error", isPresented: $showingError) {
             Button("OK") { }

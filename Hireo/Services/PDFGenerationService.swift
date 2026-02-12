@@ -1095,7 +1095,7 @@ class ClassicTemplatePDFRenderer {
         self.template = template
         self.settings = settings
     }
-    
+
     func generatePDF() throws -> PDFDocument {
         let pageRect = CGRect(origin: .zero, size: pageSize)
         let contentRect = CGRect(x: margin, y: margin, width: pageSize.width - (2 * margin), height: pageSize.height - (2 * margin))
@@ -1943,6 +1943,10 @@ class ModernTemplatePDFRenderer {
         self.template = template
         self.settings = settings
     }
+
+    private func includesSection(_ section: CVSection) -> Bool {
+        settings.includedSections.contains(section)
+    }
     
     func generatePDF() throws -> PDFDocument {
         let pageRect = CGRect(origin: .zero, size: pageSize)
@@ -2028,23 +2032,25 @@ class ModernTemplatePDFRenderer {
         var currentY: CGFloat = 48
         currentY = drawModernOceanHeader(in: CGRect(x: contentX, y: currentY, width: contentWidth, height: 120))
         currentY += 20
-        
-        let sectionFont = ModernTemplatePDFRenderer.createModernFont(size: 16, weight: .bold)
-        _ = drawText("Work Experience", at: CGPoint(x: contentX, y: currentY), font: sectionFont, color: UIColor(hex: "#111111"))
-        currentY += sectionFont.lineHeight + 6
-        
-        accentColor.setStroke()
-        let sectionLine = UIBezierPath()
-        sectionLine.move(to: CGPoint(x: contentX, y: currentY))
-        sectionLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
-        sectionLine.lineWidth = 1.2
-        sectionLine.stroke()
-        currentY += 14
-        
-        let experiences = Array(getExperienceEntries().prefix(3))
-        for entry in experiences {
-            currentY += drawModernOceanWorkEntry(entry, at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
-            currentY += 16
+
+        if includesSection(.workExperience) {
+            let sectionFont = ModernTemplatePDFRenderer.createModernFont(size: 16, weight: .bold)
+            _ = drawText("Work Experience", at: CGPoint(x: contentX, y: currentY), font: sectionFont, color: UIColor(hex: "#111111"))
+            currentY += sectionFont.lineHeight + 6
+
+            accentColor.setStroke()
+            let sectionLine = UIBezierPath()
+            sectionLine.move(to: CGPoint(x: contentX, y: currentY))
+            sectionLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+            sectionLine.lineWidth = 1.2
+            sectionLine.stroke()
+            currentY += 14
+
+            let experiences = Array(getExperienceEntries().prefix(3))
+            for entry in experiences {
+                currentY += drawModernOceanWorkEntry(entry, at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+                currentY += 16
+            }
         }
         
         drawModernOceanSidebar(x: oceanSidebarX, width: oceanSidebarWidth)
@@ -2203,80 +2209,87 @@ class ModernTemplatePDFRenderer {
         
         let headingFont = ModernTemplatePDFRenderer.createModernFont(size: 16, weight: .semibold)
         let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 8.7, weight: .regular)
-        
-        _ = drawText("About Me", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
-        currentY += headingFont.lineHeight + 4
-        
-        UIColor.white.withAlphaComponent(0.55).setStroke()
-        let aboutLine = UIBezierPath()
-        aboutLine.move(to: CGPoint(x: contentX, y: currentY))
-        aboutLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
-        aboutLine.lineWidth = 1
-        aboutLine.stroke()
-        currentY += 8
-        
-        let summaryText = userProfile.personalInfo.summary.isEmpty
-            ? "Libus stiafer errorrumquia porro et aiti occaecati idest deretation. Asin re, to doluptas doloroes sit ut harchit aut aperiam."
-            : userProfile.personalInfo.summary
-        currentY += drawMultilineText(
-            summaryText,
-            at: CGPoint(x: contentX, y: currentY),
-            font: bodyFont,
-            color: whiteColor.withAlphaComponent(0.92),
-            maxWidth: contentWidth,
-            lineSpacing: 1.8
-        )
-        currentY += 18
-        
-        _ = drawText("Skills", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
-        currentY += headingFont.lineHeight + 4
-        
-        UIColor.white.withAlphaComponent(0.55).setStroke()
-        let skillsLine = UIBezierPath()
-        skillsLine.move(to: CGPoint(x: contentX, y: currentY))
-        skillsLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
-        skillsLine.lineWidth = 1
-        skillsLine.stroke()
-        currentY += 10
-        
-        for (skillName, progress) in getModernOceanSkills() {
-            currentY += drawModernOceanSkillRow(
-                name: skillName,
-                progress: progress,
-                at: CGPoint(x: contentX, y: currentY),
-                maxWidth: contentWidth,
-                font: bodyFont
-            )
+
+        if includesSection(.summary) {
+            _ = drawText("About Me", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
+            currentY += headingFont.lineHeight + 4
+
+            UIColor.white.withAlphaComponent(0.55).setStroke()
+            let aboutLine = UIBezierPath()
+            aboutLine.move(to: CGPoint(x: contentX, y: currentY))
+            aboutLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+            aboutLine.lineWidth = 1
+            aboutLine.stroke()
             currentY += 8
-        }
-        
-        currentY += 8
-        _ = drawText("Education", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
-        currentY += headingFont.lineHeight + 4
-        
-        UIColor.white.withAlphaComponent(0.55).setStroke()
-        let eduLine = UIBezierPath()
-        eduLine.move(to: CGPoint(x: contentX, y: currentY))
-        eduLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
-        eduLine.lineWidth = 1
-        eduLine.stroke()
-        currentY += 10
-        
-        let eduTitleFont = ModernTemplatePDFRenderer.createModernFont(size: 9, weight: .semibold)
-        for entry in getEducationEntries().prefix(2) {
-            _ = drawText(entry.degree.uppercased(), at: CGPoint(x: contentX, y: currentY), font: eduTitleFont, color: whiteColor)
-            currentY += eduTitleFont.lineHeight + 2
-            _ = drawText(normalizeAquaDateRange(entry.dateRange), at: CGPoint(x: contentX, y: currentY), font: bodyFont, color: whiteColor.withAlphaComponent(0.88))
-            currentY += bodyFont.lineHeight + 2
+
+            let summaryText = userProfile.personalInfo.summary.isEmpty
+                ? "Libus stiafer errorrumquia porro et aiti occaecati idest deretation. Asin re, to doluptas doloroes sit ut harchit aut aperiam."
+                : userProfile.personalInfo.summary
             currentY += drawMultilineText(
-                entry.institution,
+                summaryText,
                 at: CGPoint(x: contentX, y: currentY),
                 font: bodyFont,
-                color: whiteColor.withAlphaComponent(0.88),
+                color: whiteColor.withAlphaComponent(0.92),
                 maxWidth: contentWidth,
-                lineSpacing: 1.5
+                lineSpacing: 1.8
             )
+            currentY += 18
+        }
+
+        if includesSection(.skills) {
+            _ = drawText("Skills", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
+            currentY += headingFont.lineHeight + 4
+
+            UIColor.white.withAlphaComponent(0.55).setStroke()
+            let skillsLine = UIBezierPath()
+            skillsLine.move(to: CGPoint(x: contentX, y: currentY))
+            skillsLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+            skillsLine.lineWidth = 1
+            skillsLine.stroke()
             currentY += 10
+
+            for (skillName, progress) in getModernOceanSkills() {
+                currentY += drawModernOceanSkillRow(
+                    name: skillName,
+                    progress: progress,
+                    at: CGPoint(x: contentX, y: currentY),
+                    maxWidth: contentWidth,
+                    font: bodyFont
+                )
+                currentY += 8
+            }
+
+            currentY += 8
+        }
+
+        if includesSection(.education) {
+            _ = drawText("Education", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
+            currentY += headingFont.lineHeight + 4
+
+            UIColor.white.withAlphaComponent(0.55).setStroke()
+            let eduLine = UIBezierPath()
+            eduLine.move(to: CGPoint(x: contentX, y: currentY))
+            eduLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+            eduLine.lineWidth = 1
+            eduLine.stroke()
+            currentY += 10
+
+            let eduTitleFont = ModernTemplatePDFRenderer.createModernFont(size: 9, weight: .semibold)
+            for entry in getEducationEntries().prefix(2) {
+                _ = drawText(entry.degree.uppercased(), at: CGPoint(x: contentX, y: currentY), font: eduTitleFont, color: whiteColor)
+                currentY += eduTitleFont.lineHeight + 2
+                _ = drawText(normalizeAquaDateRange(entry.dateRange), at: CGPoint(x: contentX, y: currentY), font: bodyFont, color: whiteColor.withAlphaComponent(0.88))
+                currentY += bodyFont.lineHeight + 2
+                currentY += drawMultilineText(
+                    entry.institution,
+                    at: CGPoint(x: contentX, y: currentY),
+                    font: bodyFont,
+                    color: whiteColor.withAlphaComponent(0.88),
+                    maxWidth: contentWidth,
+                    lineSpacing: 1.5
+                )
+                currentY += 10
+            }
         }
     }
     
@@ -2413,62 +2426,66 @@ class ModernTemplatePDFRenderer {
         topDivider.lineWidth = 1.0
         topDivider.stroke()
         currentY += 18
-        
-        _ = drawText("ABOUT ME", at: CGPoint(x: rightContentX, y: currentY), font: headingFont, color: textColor)
-        currentY += headingFont.lineHeight + 8
-        
-        let summaryText = userProfile.personalInfo.summary.isEmpty
-            ? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
-            : userProfile.personalInfo.summary
-        currentY += drawMultilineText(summaryText, at: CGPoint(x: rightContentX, y: currentY), font: bodyFont, color: UIColor(hex: "#2A2A2A"), maxWidth: rightContentWidth, lineSpacing: 3)
-        currentY += 14
-        
-        accentColor.setStroke()
-        let middleDivider = UIBezierPath()
-        middleDivider.move(to: CGPoint(x: rightContentX, y: currentY))
-        middleDivider.addLine(to: CGPoint(x: rightContentX + rightContentWidth, y: currentY))
-        middleDivider.lineWidth = 1.0
-        middleDivider.stroke()
-        currentY += 18
-        
-        _ = drawText("WORK EXPERIENCE", at: CGPoint(x: rightContentX, y: currentY), font: headingFont, color: textColor)
-        currentY += headingFont.lineHeight + 10
-        
-        let experiences = Array(getExperienceEntries().prefix(3))
-        for (index, entry) in experiences.enumerated() {
-            let positionFont = ModernTemplatePDFRenderer.createModernFont(size: 12, weight: .bold)
-            _ = drawText(entry.position.uppercased(), at: CGPoint(x: rightContentX, y: currentY), font: positionFont, color: UIColor(hex: "#1F1F1F"))
-            
-            let dateFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .semibold)
-            let dateText = normalizeAquaDateRange(entry.dateRange)
-            let dateTextSize = dateText.size(withAttributes: [.font: dateFont])
-            _ = drawText(
-                dateText,
-                at: CGPoint(x: rightContentX + rightContentWidth - dateTextSize.width, y: currentY),
-                font: dateFont,
-                color: UIColor(hex: "#2C2C2C")
-            )
-            currentY += positionFont.lineHeight + 2
-            
-            _ = drawText(entry.company, at: CGPoint(x: rightContentX, y: currentY), font: companyFont, color: UIColor(hex: "#303030"))
-            currentY += companyFont.lineHeight + 6
-            
-            for achievement in entry.achievements.prefix(2) {
-                textColor.setFill()
-                UIBezierPath(ovalIn: CGRect(x: rightContentX + 1, y: currentY + 5, width: 3, height: 3)).fill()
-                currentY += drawMultilineText(
-                    achievement,
-                    at: CGPoint(x: rightContentX + 10, y: currentY),
-                    font: bodyFont,
-                    color: UIColor(hex: "#2D2D2D"),
-                    maxWidth: rightContentWidth - 10,
-                    lineSpacing: 2
+
+        if includesSection(.summary) {
+            _ = drawText("ABOUT ME", at: CGPoint(x: rightContentX, y: currentY), font: headingFont, color: textColor)
+            currentY += headingFont.lineHeight + 8
+
+            let summaryText = userProfile.personalInfo.summary.isEmpty
+                ? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+                : userProfile.personalInfo.summary
+            currentY += drawMultilineText(summaryText, at: CGPoint(x: rightContentX, y: currentY), font: bodyFont, color: UIColor(hex: "#2A2A2A"), maxWidth: rightContentWidth, lineSpacing: 3)
+            currentY += 14
+
+            accentColor.setStroke()
+            let middleDivider = UIBezierPath()
+            middleDivider.move(to: CGPoint(x: rightContentX, y: currentY))
+            middleDivider.addLine(to: CGPoint(x: rightContentX + rightContentWidth, y: currentY))
+            middleDivider.lineWidth = 1.0
+            middleDivider.stroke()
+            currentY += 18
+        }
+
+        if includesSection(.workExperience) {
+            _ = drawText("WORK EXPERIENCE", at: CGPoint(x: rightContentX, y: currentY), font: headingFont, color: textColor)
+            currentY += headingFont.lineHeight + 10
+
+            let experiences = Array(getExperienceEntries().prefix(3))
+            for (index, entry) in experiences.enumerated() {
+                let positionFont = ModernTemplatePDFRenderer.createModernFont(size: 12, weight: .bold)
+                _ = drawText(entry.position.uppercased(), at: CGPoint(x: rightContentX, y: currentY), font: positionFont, color: UIColor(hex: "#1F1F1F"))
+
+                let dateFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .semibold)
+                let dateText = normalizeAquaDateRange(entry.dateRange)
+                let dateTextSize = dateText.size(withAttributes: [.font: dateFont])
+                _ = drawText(
+                    dateText,
+                    at: CGPoint(x: rightContentX + rightContentWidth - dateTextSize.width, y: currentY),
+                    font: dateFont,
+                    color: UIColor(hex: "#2C2C2C")
                 )
-                currentY += 4
-            }
-            
-            if index < experiences.count - 1 {
-                currentY += 10
+                currentY += positionFont.lineHeight + 2
+
+                _ = drawText(entry.company, at: CGPoint(x: rightContentX, y: currentY), font: companyFont, color: UIColor(hex: "#303030"))
+                currentY += companyFont.lineHeight + 6
+
+                for achievement in entry.achievements.prefix(2) {
+                    textColor.setFill()
+                    UIBezierPath(ovalIn: CGRect(x: rightContentX + 1, y: currentY + 5, width: 3, height: 3)).fill()
+                    currentY += drawMultilineText(
+                        achievement,
+                        at: CGPoint(x: rightContentX + 10, y: currentY),
+                        font: bodyFont,
+                        color: UIColor(hex: "#2D2D2D"),
+                        maxWidth: rightContentWidth - 10,
+                        lineSpacing: 2
+                    )
+                    currentY += 4
+                }
+
+                if index < experiences.count - 1 {
+                    currentY += 10
+                }
             }
         }
     }
@@ -2484,71 +2501,83 @@ class ModernTemplatePDFRenderer {
         let sidebarHeadingFont = ModernTemplatePDFRenderer.createModernFont(size: 15, weight: .bold)
         let sidebarBodyFont = ModernTemplatePDFRenderer.createModernFont(size: 10.5, weight: .regular)
         let sidebarStrongFont = ModernTemplatePDFRenderer.createModernFont(size: 10.5, weight: .bold)
-        
-        _ = drawText("CONTACTS", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
-        currentY += sidebarHeadingFont.lineHeight + 12
-        
-        currentY += drawAquaContactRow(
-            userProfile.personalInfo.phone.isEmpty ? "+00 123 4567890" : userProfile.personalInfo.phone,
-            iconName: "phone.fill",
-            at: CGPoint(x: leftPadding, y: currentY),
-            maxWidth: contentWidth,
-            font: sidebarBodyFont
-        )
-        currentY += 8
-        currentY += drawAquaContactRow(
-            userProfile.personalInfo.email.isEmpty ? "user@example.com" : userProfile.personalInfo.email,
-            iconName: "envelope.fill",
-            at: CGPoint(x: leftPadding, y: currentY),
-            maxWidth: contentWidth,
-            font: sidebarBodyFont
-        )
-        currentY += 8
-        currentY += drawAquaContactRow(
-            formatAddress(),
-            iconName: "house.fill",
-            at: CGPoint(x: leftPadding, y: currentY),
-            maxWidth: contentWidth,
-            font: sidebarBodyFont
-        )
-        currentY += 14
-        
-        accentColor.setStroke()
-        let firstLine = UIBezierPath()
-        firstLine.move(to: CGPoint(x: leftPadding, y: currentY))
-        firstLine.addLine(to: CGPoint(x: leftPadding + contentWidth, y: currentY))
-        firstLine.lineWidth = 1.0
-        firstLine.stroke()
-        currentY += 22
-        
-        _ = drawText("EDUCATION", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
-        currentY += sidebarHeadingFont.lineHeight + 10
-        
-        for entry in getEducationEntries().prefix(2) {
-            _ = drawText(entry.degree.uppercased(), at: CGPoint(x: leftPadding, y: currentY), font: sidebarStrongFont, color: whiteColor)
-            currentY += sidebarStrongFont.lineHeight + 3
-            _ = drawText(normalizeAquaDateRange(entry.dateRange), at: CGPoint(x: leftPadding, y: currentY), font: sidebarBodyFont, color: whiteColor.withAlphaComponent(0.92))
-            currentY += sidebarBodyFont.lineHeight + 2
-            currentY += drawMultilineText(entry.institution, at: CGPoint(x: leftPadding, y: currentY), font: sidebarBodyFont, color: whiteColor.withAlphaComponent(0.92), maxWidth: contentWidth, lineSpacing: 2)
-            currentY += 14
+
+        func drawSeparator() {
+            accentColor.setStroke()
+            let line = UIBezierPath()
+            line.move(to: CGPoint(x: leftPadding, y: currentY))
+            line.addLine(to: CGPoint(x: leftPadding + contentWidth, y: currentY))
+            line.lineWidth = 1.0
+            line.stroke()
+            currentY += 22
         }
-        
-        accentColor.setStroke()
-        let secondLine = UIBezierPath()
-        secondLine.move(to: CGPoint(x: leftPadding, y: currentY))
-        secondLine.addLine(to: CGPoint(x: leftPadding + contentWidth, y: currentY))
-        secondLine.lineWidth = 1.0
-        secondLine.stroke()
-        currentY += 22
-        
-        _ = drawText("SKILLS", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
-        currentY += sidebarHeadingFont.lineHeight + 10
-        
-        for skill in getSkillsList().prefix(8) {
-            whiteColor.setFill()
-            UIBezierPath(ovalIn: CGRect(x: leftPadding + 1, y: currentY + 5, width: 3, height: 3)).fill()
-            _ = drawText(skill, at: CGPoint(x: leftPadding + 12, y: currentY), font: sidebarBodyFont, color: whiteColor)
-            currentY += sidebarBodyFont.lineHeight + 4
+
+        var drewBlock = false
+
+        if includesSection(.personalInfo) {
+            _ = drawText("CONTACTS", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
+            currentY += sidebarHeadingFont.lineHeight + 12
+
+            currentY += drawAquaContactRow(
+                userProfile.personalInfo.phone.isEmpty ? "+00 123 4567890" : userProfile.personalInfo.phone,
+                iconName: "phone.fill",
+                at: CGPoint(x: leftPadding, y: currentY),
+                maxWidth: contentWidth,
+                font: sidebarBodyFont
+            )
+            currentY += 8
+            currentY += drawAquaContactRow(
+                userProfile.personalInfo.email.isEmpty ? "user@example.com" : userProfile.personalInfo.email,
+                iconName: "envelope.fill",
+                at: CGPoint(x: leftPadding, y: currentY),
+                maxWidth: contentWidth,
+                font: sidebarBodyFont
+            )
+            currentY += 8
+            currentY += drawAquaContactRow(
+                formatAddress(),
+                iconName: "house.fill",
+                at: CGPoint(x: leftPadding, y: currentY),
+                maxWidth: contentWidth,
+                font: sidebarBodyFont
+            )
+            currentY += 14
+            drewBlock = true
+        }
+
+        if includesSection(.education) {
+            if drewBlock {
+                drawSeparator()
+            }
+
+            _ = drawText("EDUCATION", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
+            currentY += sidebarHeadingFont.lineHeight + 10
+
+            for entry in getEducationEntries().prefix(2) {
+                _ = drawText(entry.degree.uppercased(), at: CGPoint(x: leftPadding, y: currentY), font: sidebarStrongFont, color: whiteColor)
+                currentY += sidebarStrongFont.lineHeight + 3
+                _ = drawText(normalizeAquaDateRange(entry.dateRange), at: CGPoint(x: leftPadding, y: currentY), font: sidebarBodyFont, color: whiteColor.withAlphaComponent(0.92))
+                currentY += sidebarBodyFont.lineHeight + 2
+                currentY += drawMultilineText(entry.institution, at: CGPoint(x: leftPadding, y: currentY), font: sidebarBodyFont, color: whiteColor.withAlphaComponent(0.92), maxWidth: contentWidth, lineSpacing: 2)
+                currentY += 14
+            }
+            drewBlock = true
+        }
+
+        if includesSection(.skills) {
+            if drewBlock {
+                drawSeparator()
+            }
+
+            _ = drawText("SKILLS", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
+            currentY += sidebarHeadingFont.lineHeight + 10
+
+            for skill in getSkillsList().prefix(8) {
+                whiteColor.setFill()
+                UIBezierPath(ovalIn: CGRect(x: leftPadding + 1, y: currentY + 5, width: 3, height: 3)).fill()
+                _ = drawText(skill, at: CGPoint(x: leftPadding + 12, y: currentY), font: sidebarBodyFont, color: whiteColor)
+                currentY += sidebarBodyFont.lineHeight + 4
+            }
         }
     }
     
@@ -2662,21 +2691,25 @@ class ModernTemplatePDFRenderer {
         // Draw profile picture
         currentY = drawProfilePicture(at: CGPoint(x: contentPadding, y: currentY))
         currentY += 25
-        
-        // Draw About Me section
-        currentY = drawAboutMeSection(at: CGPoint(x: contentPadding, y: currentY))
-        currentY += sectionSpacing
-        
-        // Draw Contact section
-        currentY = drawContactSection(at: CGPoint(x: contentPadding, y: currentY))
-        currentY += sectionSpacing
-        
-        // Draw Skills section
-        currentY = drawSkillsSection(at: CGPoint(x: contentPadding, y: currentY))
-        currentY += sectionSpacing
-        
-        // Draw Language section
-        currentY = drawLanguageSection(at: CGPoint(x: contentPadding, y: currentY))
+
+        if includesSection(.summary) {
+            currentY = drawAboutMeSection(at: CGPoint(x: contentPadding, y: currentY))
+            currentY += sectionSpacing
+        }
+
+        if includesSection(.personalInfo) {
+            currentY = drawContactSection(at: CGPoint(x: contentPadding, y: currentY))
+            currentY += sectionSpacing
+        }
+
+        if includesSection(.skills) {
+            currentY = drawSkillsSection(at: CGPoint(x: contentPadding, y: currentY))
+            currentY += sectionSpacing
+        }
+
+        if includesSection(.languages) {
+            currentY = drawLanguageSection(at: CGPoint(x: contentPadding, y: currentY))
+        }
     }
     
     private func drawContentArea() {
@@ -2687,13 +2720,15 @@ class ModernTemplatePDFRenderer {
         // Draw header (name and title)
         currentY = drawHeader(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
         currentY += 40
-        
-        // Draw Education section
-        currentY = drawEducationSection(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
-        currentY += 40
-        
-        // Draw Experience section
-        currentY = drawExperienceSection(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+
+        if includesSection(.education) {
+            currentY = drawEducationSection(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+            currentY += 40
+        }
+
+        if includesSection(.workExperience) {
+            currentY = drawExperienceSection(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+        }
     }
     
     private func drawContentAreaWithPageBreaks() {
@@ -2708,7 +2743,7 @@ class ModernTemplatePDFRenderer {
         
         // Draw Education section
         let educationEntries = getEducationEntries()
-        if !educationEntries.isEmpty {
+        if includesSection(.education) && !educationEntries.isEmpty {
             // Check if education section header fits
             if currentY + 50 > maxContentY {
                 startNewPage()
@@ -2739,7 +2774,7 @@ class ModernTemplatePDFRenderer {
         
         // Draw Experience section
         let experienceEntries = getExperienceEntries()
-        if !experienceEntries.isEmpty {
+        if includesSection(.workExperience) && !experienceEntries.isEmpty {
             // Check if experience section header fits
             if currentY + 50 > maxContentY {
                 startNewPage()
@@ -3335,6 +3370,10 @@ class CreativeTemplatePDFRenderer {
         self.template = template
         self.settings = settings
     }
+
+    private func includesSection(_ section: CVSection) -> Bool {
+        settings.includedSections.contains(section)
+    }
     
     func generatePDF() throws -> PDFDocument {
         let pageRect = CGRect(origin: .zero, size: pageSize)
@@ -3423,22 +3462,24 @@ class CreativeTemplatePDFRenderer {
         
         drawProfileImage(at: CGPoint(x: imageX, y: imageY), size: imageSize)
         
-        // Draw summary background (right side)
-        let summaryX = imageX + imageSize + 30
-        let summaryWidth = pageSize.width - summaryX - margin
-        let summaryRect = CGRect(x: summaryX, y: currentY + 10, width: summaryWidth, height: sectionHeight - 20)
-        
-        // Draw rounded background for summary
-        summaryBackgroundColor.setFill()
-        UIBezierPath(roundedRect: summaryRect, cornerRadius: 15).fill()
-        
-        // Draw summary text
-        let summaryText = userProfile.personalInfo.summary.isEmpty ? 
-            "Sales manager with five years of experience and a focus on goal setting and accountability. Seeking an opportunity to work for a renowned sales corporation where my management style of fostering employee excellence can develop intentional, self-driven employees." : 
-            userProfile.personalInfo.summary
-        
-        let summaryTextRect = summaryRect.insetBy(dx: 25, dy: 25)
-        drawMultilineText(summaryText, in: summaryTextRect, font: UIFont.systemFont(ofSize: 12), color: .white)
+        if includesSection(.summary) {
+            // Draw summary background (right side)
+            let summaryX = imageX + imageSize + 30
+            let summaryWidth = pageSize.width - summaryX - margin
+            let summaryRect = CGRect(x: summaryX, y: currentY + 10, width: summaryWidth, height: sectionHeight - 20)
+
+            // Draw rounded background for summary
+            summaryBackgroundColor.setFill()
+            UIBezierPath(roundedRect: summaryRect, cornerRadius: 15).fill()
+
+            // Draw summary text
+            let summaryText = userProfile.personalInfo.summary.isEmpty ?
+                "Sales manager with five years of experience and a focus on goal setting and accountability. Seeking an opportunity to work for a renowned sales corporation where my management style of fostering employee excellence can develop intentional, self-driven employees." :
+                userProfile.personalInfo.summary
+
+            let summaryTextRect = summaryRect.insetBy(dx: 25, dy: 25)
+            drawMultilineText(summaryText, in: summaryTextRect, font: UIFont.systemFont(ofSize: 12), color: .white)
+        }
         
         return currentY + sectionHeight
     }
@@ -3453,16 +3494,24 @@ class CreativeTemplatePDFRenderer {
         var rightY = startY + 30
         
         // Left column: Education, Skills, Languages
-        leftY = drawEducationSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
-        leftY += contentSpacing
-        
-        leftY = drawSkillsSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
-        leftY += contentSpacing
-        
-        leftY = drawLanguagesSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
-        
+        if includesSection(.education) {
+            leftY = drawEducationSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
+            leftY += contentSpacing
+        }
+
+        if includesSection(.skills) {
+            leftY = drawSkillsSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
+            leftY += contentSpacing
+        }
+
+        if includesSection(.languages) {
+            leftY = drawLanguagesSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
+        }
+
         // Right column: Working Experience with timeline
-        rightY = drawWorkingExperienceSection(at: CGPoint(x: rightColumnX, y: rightY), maxWidth: rightColumnWidth)
+        if includesSection(.workExperience) {
+            rightY = drawWorkingExperienceSection(at: CGPoint(x: rightColumnX, y: rightY), maxWidth: rightColumnWidth)
+        }
     }
     
     private func drawEducationSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
@@ -3818,6 +3867,10 @@ class ProfessionalTemplatePDFRenderer {
         self.template = template
         self.settings = settings
     }
+
+    private func includesSection(_ section: CVSection) -> Bool {
+        settings.includedSections.contains(section)
+    }
     
     func generatePDF() throws -> PDFDocument {
         let pageRect = CGRect(origin: .zero, size: pageSize)
@@ -3925,15 +3978,17 @@ class ProfessionalTemplatePDFRenderer {
         
         drawProfileImage(at: CGPoint(x: imageX, y: imageY), size: imageSize)
         
-        // Summary text (right side)
-        let summaryX = imageX + imageSize + 20
-        let summaryWidth = pageSize.width - summaryX - margin
-        
-        let summaryText = userProfile.personalInfo.summary.isEmpty ? 
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit." : 
-            userProfile.personalInfo.summary
-        
-        drawMultilineText(summaryText, at: CGPoint(x: summaryX, y: currentY + 20), font: contentFont, color: textColor, maxWidth: summaryWidth)
+        if includesSection(.summary) {
+            // Summary text (right side)
+            let summaryX = imageX + imageSize + 20
+            let summaryWidth = pageSize.width - summaryX - margin
+
+            let summaryText = userProfile.personalInfo.summary.isEmpty ?
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus scelerisque lorem vitae mi. Lorem ipsum dolor sit amet, consectetur adipiscing elit." :
+                userProfile.personalInfo.summary
+
+            drawMultilineText(summaryText, at: CGPoint(x: summaryX, y: currentY + 20), font: contentFont, color: textColor, maxWidth: summaryWidth)
+        }
         
         return currentY + sectionHeight
     }
@@ -3948,19 +4003,29 @@ class ProfessionalTemplatePDFRenderer {
         var rightY = startY + 20
         
         // Left column: Education, Skills, Interests
-        leftY = drawEducationSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
-        leftY += sectionSpacing
-        
-        leftY = drawSkillsSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
-        leftY += sectionSpacing
-        
-        leftY = drawInterestsSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
-        
+        if includesSection(.education) {
+            leftY = drawEducationSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
+            leftY += sectionSpacing
+        }
+
+        if includesSection(.skills) {
+            leftY = drawSkillsSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
+            leftY += sectionSpacing
+        }
+
+        if includesSection(.interests) {
+            leftY = drawInterestsSection(at: CGPoint(x: leftColumnX, y: leftY), maxWidth: leftColumnWidth)
+        }
+
         // Right column: Experience, References
-        rightY = drawExperienceSection(at: CGPoint(x: rightColumnX, y: rightY), maxWidth: rightColumnWidth)
-        rightY += sectionSpacing
-        
-        rightY = drawReferencesSection(at: CGPoint(x: rightColumnX, y: rightY), maxWidth: rightColumnWidth)
+        if includesSection(.workExperience) {
+            rightY = drawExperienceSection(at: CGPoint(x: rightColumnX, y: rightY), maxWidth: rightColumnWidth)
+            rightY += sectionSpacing
+        }
+
+        if includesSection(.projects) {
+            rightY = drawReferencesSection(at: CGPoint(x: rightColumnX, y: rightY), maxWidth: rightColumnWidth)
+        }
     }
     
     private func drawEducationSection(at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
