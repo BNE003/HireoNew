@@ -122,6 +122,39 @@ class DataManager: ObservableObject {
     func loadBuiltInTemplates() {
         cvTemplates = [
             CVTemplate(id: "modern", name: "Modern", description: "Clean and contemporary design", category: .modern),
+            {
+                var template = CVTemplate(
+                    id: "modern_edge",
+                    name: "Modern Edge",
+                    description: "Contemporary split layout with bold cyan accents",
+                    category: .modern
+                )
+                template.colorSchemes = [.teal, .blue, .black, .gray]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
+            {
+                var template = CVTemplate(
+                    id: "modern_aqua",
+                    name: "Modern Aqua",
+                    description: "Clean two-column layout with aqua sidebar and bold typography",
+                    category: .modern
+                )
+                template.colorSchemes = [.teal, .gray, .blue, .black]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
+            {
+                var template = CVTemplate(
+                    id: "modern_ocean",
+                    name: "Modern Ocean",
+                    description: "Professional CV with right blue sidebar and clean work timeline",
+                    category: .modern
+                )
+                template.colorSchemes = [.blue, .teal, .gray, .black]
+                template.fontFamilies = [.modern, .system, .serif]
+                return template
+            }(),
             CVTemplate(id: "classic", name: "Classic", description: "Traditional professional layout", category: .classic),
             CVTemplate(id: "creative", name: "Creative", description: "Bold and eye-catching design", category: .creative),
             CVTemplate(id: "professional", name: "Professional", description: "Elegant two-column layout with modern styling", category: .professional),

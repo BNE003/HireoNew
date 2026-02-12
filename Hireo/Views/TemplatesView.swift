@@ -373,13 +373,16 @@ struct CVTemplateDetailView: View {
                     customSettings: CVSettings()
                 )
                 
-                guard let pdfData = pdfDocument.dataRepresentation() else { return }
+                guard let pdfData = pdfDocument.dataRepresentation() else { 
+                    print("Failed to get PDF data representation for template: \(template.name)")
+                    return 
+                }
                 
                 await MainActor.run {
                     self.previewPDFData = pdfData
                 }
             } catch {
-                // Preview generation failed, but continue without preview
+                print("Failed to generate preview for template \(template.name): \(error)")
             }
         }
     }
@@ -555,13 +558,16 @@ struct CoverLetterTemplateDetailView: View {
                     content: sampleContent
                 )
                 
-                guard let pdfData = pdfDocument.dataRepresentation() else { return }
+                guard let pdfData = pdfDocument.dataRepresentation() else { 
+                    print("Failed to get PDF data representation for cover letter template: \(template.name)")
+                    return 
+                }
                 
                 await MainActor.run {
                     self.previewPDFData = pdfData
                 }
             } catch {
-                // Preview generation failed, but continue without preview
+                print("Failed to generate preview for cover letter template \(template.name): \(error)")
             }
         }
     }
@@ -669,16 +675,48 @@ struct PDFThumbnailView: UIViewRepresentable {
 struct PDFPreviewContainer: UIViewRepresentable {
     let pdfData: Data
     
-    func makeUIView(context: Context) -> PDFView {
+    func makeUIView(context: Context) -> UIView {
+        let containerView = UIView()
+        containerView.backgroundColor = UIColor.systemBackground
+        
+        guard let pdfDocument = PDFDocument(data: pdfData) else {
+            let label = UILabel()
+            label.text = "Failed to load PDF preview"
+            label.textAlignment = .center
+            label.textColor = UIColor.secondaryLabel
+            label.font = UIFont.systemFont(ofSize: 16)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(label)
+            
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: containerView.centerYAnchor)
+            ])
+            
+            return containerView
+        }
+        
         let pdfView = PDFView()
-        pdfView.document = PDFDocument(data: pdfData)
+        pdfView.document = pdfDocument
         pdfView.autoScales = true
         pdfView.displayMode = .singlePage
         pdfView.displayDirection = .vertical
-        return pdfView
+        pdfView.backgroundColor = UIColor.systemBackground
+        pdfView.translatesAutoresizingMaskIntoConstraints = false
+        
+        containerView.addSubview(pdfView)
+        
+        NSLayoutConstraint.activate([
+            pdfView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            pdfView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            pdfView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            pdfView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+        
+        return containerView
     }
     
-    func updateUIView(_ uiView: PDFView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 // MARK: - Helper Functions

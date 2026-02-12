@@ -1844,10 +1844,42 @@ class ModernTemplatePDFRenderer {
     private let contentPadding: CGFloat = 20
     private let sectionSpacing: CGFloat = 15
     
-    // Colors matching the image exactly
-    private let sidebarColor = UIColor(hex: "#3B3B3B")
-    private let textColor = UIColor.black
-    private let whiteColor = UIColor.white
+    private var isModernOceanTemplate: Bool { template.id == "modern_ocean" }
+    private var isModernAquaTemplate: Bool { template.id == "modern_aqua" }
+    private var isModernEdgeTemplate: Bool { template.id == "modern_edge" }
+    
+    // Colors and accents for modern template variants
+    private var sidebarColor: UIColor {
+        if isModernOceanTemplate {
+            return UIColor(hex: "#005F85")
+        }
+        if isModernAquaTemplate {
+            return UIColor(hex: "#9BBFC0")
+        }
+        return isModernEdgeTemplate ? UIColor(hex: "#0B1F3A") : UIColor(hex: "#3B3B3B")
+    }
+    
+    private var textColor: UIColor {
+        if isModernOceanTemplate {
+            return UIColor(hex: "#111827")
+        }
+        if isModernAquaTemplate {
+            return UIColor(hex: "#26234D")
+        }
+        return isModernEdgeTemplate ? UIColor(hex: "#0F172A") : UIColor.black
+    }
+    
+    private var accentColor: UIColor {
+        if isModernOceanTemplate {
+            return UIColor(hex: "#0A6F8D")
+        }
+        if isModernAquaTemplate {
+            return UIColor(hex: "#88B5B4")
+        }
+        return isModernEdgeTemplate ? UIColor(hex: "#22D3EE") : textColor
+    }
+    
+    private var whiteColor: UIColor { UIColor.white }
     
     // Modern Typography System - Using contemporary fonts for professional CV design
     private lazy var nameFont = ModernTemplatePDFRenderer.createModernFont(size: 32, weight: .bold)
@@ -1936,11 +1968,687 @@ class ModernTemplatePDFRenderer {
     }
     
     private func drawModernTemplate() {
+        if isModernOceanTemplate {
+            drawModernOceanTemplate()
+            return
+        }
+        
+        if isModernAquaTemplate {
+            drawModernAquaTemplate()
+            return
+        }
+        
         // Draw left sidebar with dark background (only on first page)
         drawSidebar()
         
         // Draw right content area with page break support
         drawContentAreaWithPageBreaks()
+    }
+    
+    private func drawModernOceanTemplate() {
+        let oceanSidebarWidth: CGFloat = 190
+        let oceanSidebarX = pageSize.width - oceanSidebarWidth
+        let contentX: CGFloat = 28
+        let contentWidth = oceanSidebarX - contentX - 18
+        
+        UIColor.white.setFill()
+        UIBezierPath(rect: CGRect(origin: .zero, size: pageSize)).fill()
+        
+        // Top accent stripe similar to the reference layout.
+        UIColor(hex: "#0C5E86").setFill()
+        UIBezierPath(rect: CGRect(x: contentX + 6, y: 18, width: 84, height: 10)).fill()
+        
+        // Right blue sidebar with a subtle vertical gradient.
+        let sidebarRect = CGRect(x: oceanSidebarX, y: 0, width: oceanSidebarWidth, height: pageSize.height)
+        if let context = UIGraphicsGetCurrentContext(),
+           let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: [
+                    UIColor(hex: "#065F87").cgColor,
+                    UIColor(hex: "#0A7798").cgColor,
+                    UIColor(hex: "#0C88AB").cgColor
+                ] as CFArray,
+                locations: [0.0, 0.55, 1.0]
+           ) {
+            context.saveGState()
+            context.addRect(sidebarRect)
+            context.clip()
+            context.drawLinearGradient(
+                gradient,
+                start: CGPoint(x: sidebarRect.midX, y: sidebarRect.minY),
+                end: CGPoint(x: sidebarRect.midX, y: sidebarRect.maxY),
+                options: []
+            )
+            context.restoreGState()
+        } else {
+            sidebarColor.setFill()
+            UIBezierPath(rect: sidebarRect).fill()
+        }
+        
+        var currentY: CGFloat = 48
+        currentY = drawModernOceanHeader(in: CGRect(x: contentX, y: currentY, width: contentWidth, height: 120))
+        currentY += 20
+        
+        let sectionFont = ModernTemplatePDFRenderer.createModernFont(size: 16, weight: .bold)
+        _ = drawText("Work Experience", at: CGPoint(x: contentX, y: currentY), font: sectionFont, color: UIColor(hex: "#111111"))
+        currentY += sectionFont.lineHeight + 6
+        
+        accentColor.setStroke()
+        let sectionLine = UIBezierPath()
+        sectionLine.move(to: CGPoint(x: contentX, y: currentY))
+        sectionLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+        sectionLine.lineWidth = 1.2
+        sectionLine.stroke()
+        currentY += 14
+        
+        let experiences = Array(getExperienceEntries().prefix(3))
+        for entry in experiences {
+            currentY += drawModernOceanWorkEntry(entry, at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
+            currentY += 16
+        }
+        
+        drawModernOceanSidebar(x: oceanSidebarX, width: oceanSidebarWidth)
+    }
+    
+    private func drawModernOceanHeader(in rect: CGRect) -> CGFloat {
+        var currentY = rect.minY
+        
+        let firstName = userProfile.personalInfo.firstName.isEmpty ? "Michael" : userProfile.personalInfo.firstName
+        let lastName = userProfile.personalInfo.lastName.isEmpty ? "Brown" : userProfile.personalInfo.lastName
+        let titleText = userProfile.personalInfo.title.isEmpty ? "Web & UI Designer" : userProfile.personalInfo.title
+        
+        let nameFont = ModernTemplatePDFRenderer.createModernFont(size: 24, weight: .bold)
+        let titleFont = ModernTemplatePDFRenderer.createModernFont(size: 12, weight: .medium)
+        let contactFont = ModernTemplatePDFRenderer.createModernFont(size: 7.5, weight: .medium)
+        
+        let nameSize = drawText("\(firstName) \(lastName)", at: CGPoint(x: rect.minX, y: currentY), font: nameFont, color: UIColor(hex: "#111111"))
+        currentY += nameSize.height + 3
+        
+        let titleSize = drawText(titleText, at: CGPoint(x: rect.minX, y: currentY), font: titleFont, color: UIColor(hex: "#222222"))
+        currentY += titleSize.height + 10
+        
+        UIColor(hex: "#B8BDC4").setStroke()
+        let divider = UIBezierPath()
+        divider.move(to: CGPoint(x: rect.minX, y: currentY))
+        divider.addLine(to: CGPoint(x: rect.maxX, y: currentY))
+        divider.lineWidth = 1.0
+        divider.stroke()
+        currentY += 8
+        
+        let phoneText = userProfile.personalInfo.phone.isEmpty ? "+00 000 0000 0000" : userProfile.personalInfo.phone
+        let webText = userProfile.personalInfo.email.isEmpty ? "www.example.com" : userProfile.personalInfo.email
+        let locationText = formatAddress()
+        let itemWidth = (rect.width - 8) / 3
+        
+        _ = drawModernOceanInlineContact(
+            iconName: "phone.fill",
+            text: phoneText,
+            at: CGPoint(x: rect.minX, y: currentY),
+            maxWidth: itemWidth,
+            font: contactFont,
+            color: UIColor(hex: "#2F2F2F")
+        )
+        
+        _ = drawModernOceanInlineContact(
+            iconName: "envelope.fill",
+            text: webText,
+            at: CGPoint(x: rect.minX + itemWidth + 4, y: currentY),
+            maxWidth: itemWidth,
+            font: contactFont,
+            color: UIColor(hex: "#2F2F2F")
+        )
+        
+        _ = drawModernOceanInlineContact(
+            iconName: "location.fill",
+            text: locationText,
+            at: CGPoint(x: rect.minX + (itemWidth * 2) + 8, y: currentY),
+            maxWidth: itemWidth,
+            font: contactFont,
+            color: UIColor(hex: "#2F2F2F")
+        )
+        
+        return currentY + 18
+    }
+    
+    private func drawModernOceanInlineContact(
+        iconName: String,
+        text: String,
+        at point: CGPoint,
+        maxWidth: CGFloat,
+        font: UIFont,
+        color: UIColor
+    ) -> CGFloat {
+        let iconSize: CGFloat = 8
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: 7, weight: .semibold)
+        if let icon = UIImage(systemName: iconName, withConfiguration: symbolConfig)?
+            .withTintColor(color, renderingMode: .alwaysOriginal) {
+            icon.draw(in: CGRect(x: point.x, y: point.y + 1, width: iconSize, height: iconSize))
+        }
+        
+        return drawMultilineText(
+            text,
+            at: CGPoint(x: point.x + iconSize + 4, y: point.y),
+            font: font,
+            color: color,
+            maxWidth: maxWidth - iconSize - 4,
+            lineSpacing: 1
+        )
+    }
+    
+    private func drawModernOceanWorkEntry(_ entry: ExperienceDisplayEntry, at point: CGPoint, maxWidth: CGFloat) -> CGFloat {
+        var currentY = point.y
+        let startY = currentY
+        
+        let positionFont = ModernTemplatePDFRenderer.createModernFont(size: 11.5, weight: .bold)
+        let roleFont = ModernTemplatePDFRenderer.createModernFont(size: 9.5, weight: .medium)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 8.5, weight: .regular)
+        
+        let dateText = normalizeAquaDateRange(entry.dateRange)
+        let pillWidth = max(70, dateText.size(withAttributes: [.font: roleFont]).width + 18)
+        drawModernOceanDatePill(dateText, at: CGPoint(x: point.x + maxWidth - pillWidth, y: currentY - 1), width: pillWidth)
+        
+        _ = drawText(entry.position, at: CGPoint(x: point.x, y: currentY), font: positionFont, color: UIColor(hex: "#161616"))
+        currentY += positionFont.lineHeight + 2
+        
+        let roleText = userProfile.personalInfo.title.isEmpty ? "UX Designer" : userProfile.personalInfo.title
+        _ = drawText(roleText, at: CGPoint(x: point.x, y: currentY), font: roleFont, color: UIColor(hex: "#313131"))
+        currentY += roleFont.lineHeight + 1
+        
+        _ = drawText(entry.company, at: CGPoint(x: point.x, y: currentY), font: roleFont, color: UIColor(hex: "#313131"))
+        currentY += roleFont.lineHeight + 6
+        
+        let bulletEntries = entry.achievements.isEmpty
+            ? ["Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."]
+            : Array(entry.achievements.prefix(2))
+        
+        for bullet in bulletEntries {
+            UIColor(hex: "#3A3A3A").setFill()
+            UIBezierPath(ovalIn: CGRect(x: point.x + 1, y: currentY + 3, width: 3, height: 3)).fill()
+            currentY += drawMultilineText(
+                bullet,
+                at: CGPoint(x: point.x + 10, y: currentY),
+                font: bodyFont,
+                color: UIColor(hex: "#363636"),
+                maxWidth: maxWidth - 10,
+                lineSpacing: 1.5
+            )
+            currentY += 4
+        }
+        
+        return currentY - startY
+    }
+    
+    private func drawModernOceanDatePill(_ text: String, at point: CGPoint, width: CGFloat) {
+        let pillHeight: CGFloat = 16
+        let pillRect = CGRect(x: point.x, y: point.y, width: width, height: pillHeight)
+        
+        UIColor(hex: "#ECEFF2").setFill()
+        UIBezierPath(roundedRect: pillRect, cornerRadius: pillHeight / 2).fill()
+        
+        let font = ModernTemplatePDFRenderer.createModernFont(size: 8, weight: .semibold)
+        let textSize = text.size(withAttributes: [.font: font])
+        let textX = pillRect.midX - (textSize.width / 2)
+        let textY = pillRect.midY - (textSize.height / 2)
+        _ = drawText(text, at: CGPoint(x: textX, y: textY), font: font, color: UIColor(hex: "#4A4F55"))
+    }
+    
+    private func drawModernOceanSidebar(x sidebarX: CGFloat, width sidebarWidth: CGFloat) {
+        let padding: CGFloat = 20
+        let contentX = sidebarX + padding
+        let contentWidth = sidebarWidth - (padding * 2)
+        var currentY: CGFloat = 38
+        
+        currentY = drawModernOceanSidebarProfile(centerX: sidebarX + (sidebarWidth / 2), topY: currentY, size: 92)
+        currentY += 18
+        
+        let headingFont = ModernTemplatePDFRenderer.createModernFont(size: 16, weight: .semibold)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 8.7, weight: .regular)
+        
+        _ = drawText("About Me", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
+        currentY += headingFont.lineHeight + 4
+        
+        UIColor.white.withAlphaComponent(0.55).setStroke()
+        let aboutLine = UIBezierPath()
+        aboutLine.move(to: CGPoint(x: contentX, y: currentY))
+        aboutLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+        aboutLine.lineWidth = 1
+        aboutLine.stroke()
+        currentY += 8
+        
+        let summaryText = userProfile.personalInfo.summary.isEmpty
+            ? "Libus stiafer errorrumquia porro et aiti occaecati idest deretation. Asin re, to doluptas doloroes sit ut harchit aut aperiam."
+            : userProfile.personalInfo.summary
+        currentY += drawMultilineText(
+            summaryText,
+            at: CGPoint(x: contentX, y: currentY),
+            font: bodyFont,
+            color: whiteColor.withAlphaComponent(0.92),
+            maxWidth: contentWidth,
+            lineSpacing: 1.8
+        )
+        currentY += 18
+        
+        _ = drawText("Skills", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
+        currentY += headingFont.lineHeight + 4
+        
+        UIColor.white.withAlphaComponent(0.55).setStroke()
+        let skillsLine = UIBezierPath()
+        skillsLine.move(to: CGPoint(x: contentX, y: currentY))
+        skillsLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+        skillsLine.lineWidth = 1
+        skillsLine.stroke()
+        currentY += 10
+        
+        for (skillName, progress) in getModernOceanSkills() {
+            currentY += drawModernOceanSkillRow(
+                name: skillName,
+                progress: progress,
+                at: CGPoint(x: contentX, y: currentY),
+                maxWidth: contentWidth,
+                font: bodyFont
+            )
+            currentY += 8
+        }
+        
+        currentY += 8
+        _ = drawText("Education", at: CGPoint(x: contentX, y: currentY), font: headingFont, color: whiteColor)
+        currentY += headingFont.lineHeight + 4
+        
+        UIColor.white.withAlphaComponent(0.55).setStroke()
+        let eduLine = UIBezierPath()
+        eduLine.move(to: CGPoint(x: contentX, y: currentY))
+        eduLine.addLine(to: CGPoint(x: contentX + contentWidth, y: currentY))
+        eduLine.lineWidth = 1
+        eduLine.stroke()
+        currentY += 10
+        
+        let eduTitleFont = ModernTemplatePDFRenderer.createModernFont(size: 9, weight: .semibold)
+        for entry in getEducationEntries().prefix(2) {
+            _ = drawText(entry.degree.uppercased(), at: CGPoint(x: contentX, y: currentY), font: eduTitleFont, color: whiteColor)
+            currentY += eduTitleFont.lineHeight + 2
+            _ = drawText(normalizeAquaDateRange(entry.dateRange), at: CGPoint(x: contentX, y: currentY), font: bodyFont, color: whiteColor.withAlphaComponent(0.88))
+            currentY += bodyFont.lineHeight + 2
+            currentY += drawMultilineText(
+                entry.institution,
+                at: CGPoint(x: contentX, y: currentY),
+                font: bodyFont,
+                color: whiteColor.withAlphaComponent(0.88),
+                maxWidth: contentWidth,
+                lineSpacing: 1.5
+            )
+            currentY += 10
+        }
+    }
+    
+    private func drawModernOceanSidebarProfile(centerX: CGFloat, topY: CGFloat, size: CGFloat) -> CGFloat {
+        let imageRect = CGRect(x: centerX - (size / 2), y: topY, width: size, height: size)
+        
+        if let profileImageData = userProfile.personalInfo.profileImageData,
+           let image = UIImage(data: profileImageData),
+           let context = UIGraphicsGetCurrentContext() {
+            context.saveGState()
+            let clipPath = UIBezierPath(ovalIn: imageRect)
+            clipPath.addClip()
+            
+            let imageAspectRatio = image.size.width / image.size.height
+            var drawRect: CGRect
+            if imageAspectRatio > 1.0 {
+                let drawHeight = size
+                let drawWidth = drawHeight * imageAspectRatio
+                drawRect = CGRect(x: imageRect.minX + ((size - drawWidth) / 2), y: imageRect.minY, width: drawWidth, height: drawHeight)
+            } else {
+                let drawWidth = size
+                let drawHeight = drawWidth / imageAspectRatio
+                drawRect = CGRect(x: imageRect.minX, y: imageRect.minY + ((size - drawHeight) / 2), width: drawWidth, height: drawHeight)
+            }
+            
+            image.draw(in: drawRect)
+            context.restoreGState()
+        } else {
+            UIColor.white.withAlphaComponent(0.92).setFill()
+            UIBezierPath(ovalIn: imageRect).fill()
+            
+            UIColor(hex: "#8A9199").setFill()
+            UIBezierPath(ovalIn: CGRect(x: centerX - 13, y: topY + 22, width: 26, height: 26)).fill()
+            UIBezierPath(roundedRect: CGRect(x: centerX - 19, y: topY + 49, width: 38, height: 26), cornerRadius: 12).fill()
+        }
+        
+        UIColor.white.setStroke()
+        let strokePath = UIBezierPath(ovalIn: imageRect)
+        strokePath.lineWidth = 4
+        strokePath.stroke()
+        
+        return topY + size
+    }
+    
+    private func drawModernOceanSkillRow(name: String, progress: CGFloat, at point: CGPoint, maxWidth: CGFloat, font: UIFont) -> CGFloat {
+        var currentY = point.y
+        _ = drawText(name, at: CGPoint(x: point.x, y: currentY), font: font, color: whiteColor.withAlphaComponent(0.92))
+        currentY += font.lineHeight + 5
+        
+        let lineStart = CGPoint(x: point.x, y: currentY + 1)
+        let lineEnd = CGPoint(x: point.x + maxWidth, y: currentY + 1)
+        
+        UIColor.white.withAlphaComponent(0.35).setStroke()
+        let baseLine = UIBezierPath()
+        baseLine.move(to: lineStart)
+        baseLine.addLine(to: lineEnd)
+        baseLine.lineWidth = 1.8
+        baseLine.stroke()
+        
+        UIColor.white.setStroke()
+        let progressLine = UIBezierPath()
+        progressLine.move(to: lineStart)
+        progressLine.addLine(to: CGPoint(x: lineStart.x + maxWidth * max(0.1, min(1.0, progress)), y: lineStart.y))
+        progressLine.lineWidth = 1.8
+        progressLine.stroke()
+        
+        UIColor.white.setFill()
+        let knobX = lineStart.x + maxWidth * max(0.1, min(1.0, progress))
+        UIBezierPath(ovalIn: CGRect(x: knobX - 2.5, y: lineStart.y - 2.5, width: 5, height: 5)).fill()
+        
+        return currentY - point.y + 4
+    }
+    
+    private func getModernOceanSkills() -> [(String, CGFloat)] {
+        let allSkills = userProfile.skills.flatMap { $0.skills }
+        if allSkills.isEmpty {
+            return [
+                ("UI Design", 0.9),
+                ("Web Design", 0.78),
+                ("Brand Design", 0.72),
+                ("Figma", 0.85)
+            ]
+        }
+        
+        return Array(allSkills.prefix(4)).map { skill in
+            let progress: CGFloat
+            switch skill.proficiencyLevel {
+            case .beginner: progress = 0.35
+            case .intermediate: progress = 0.55
+            case .advanced: progress = 0.75
+            case .expert: progress = 0.9
+            }
+            return (skill.name, progress)
+        }
+    }
+    
+    private func drawModernAquaTemplate() {
+        let aquaSidebarWidth: CGFloat = 225
+        let rightContentX: CGFloat = aquaSidebarWidth + 24
+        let rightContentWidth = pageSize.width - rightContentX - 26
+        
+        UIColor.white.setFill()
+        UIBezierPath(rect: CGRect(origin: .zero, size: pageSize)).fill()
+        
+        sidebarColor.setFill()
+        UIBezierPath(rect: CGRect(x: 0, y: 0, width: aquaSidebarWidth, height: pageSize.height)).fill()
+        
+        drawAquaSidebarContent(sidebarWidth: aquaSidebarWidth)
+        
+        var currentY: CGFloat = 56
+        let firstName = userProfile.personalInfo.firstName.isEmpty ? "Basil" : userProfile.personalInfo.firstName
+        let lastName = userProfile.personalInfo.lastName.isEmpty ? "Hailward" : userProfile.personalInfo.lastName
+        let titleText = userProfile.personalInfo.title.isEmpty ? "Your Title Name Here" : userProfile.personalInfo.title
+        
+        let firstNameFont = ModernTemplatePDFRenderer.createModernFont(size: 26, weight: .semibold)
+        let lastNameFont = ModernTemplatePDFRenderer.createModernFont(size: 26, weight: .bold)
+        let headingFont = ModernTemplatePDFRenderer.createModernFont(size: 13, weight: .bold)
+        let bodyFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .regular)
+        let companyFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .medium)
+        
+        let firstNameSize = drawText(firstName, at: CGPoint(x: rightContentX, y: currentY), font: firstNameFont, color: accentColor)
+        currentY += firstNameSize.height + 2
+        
+        let lastNameSize = drawText(lastName, at: CGPoint(x: rightContentX, y: currentY), font: lastNameFont, color: textColor)
+        currentY += lastNameSize.height + 14
+        
+        let titleSize = drawText(titleText, at: CGPoint(x: rightContentX, y: currentY), font: ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .medium), color: UIColor(hex: "#1C1C1C"))
+        currentY += titleSize.height + 14
+        
+        accentColor.setStroke()
+        let topDivider = UIBezierPath()
+        topDivider.move(to: CGPoint(x: rightContentX, y: currentY))
+        topDivider.addLine(to: CGPoint(x: rightContentX + rightContentWidth, y: currentY))
+        topDivider.lineWidth = 1.0
+        topDivider.stroke()
+        currentY += 18
+        
+        _ = drawText("ABOUT ME", at: CGPoint(x: rightContentX, y: currentY), font: headingFont, color: textColor)
+        currentY += headingFont.lineHeight + 8
+        
+        let summaryText = userProfile.personalInfo.summary.isEmpty
+            ? "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+            : userProfile.personalInfo.summary
+        currentY += drawMultilineText(summaryText, at: CGPoint(x: rightContentX, y: currentY), font: bodyFont, color: UIColor(hex: "#2A2A2A"), maxWidth: rightContentWidth, lineSpacing: 3)
+        currentY += 14
+        
+        accentColor.setStroke()
+        let middleDivider = UIBezierPath()
+        middleDivider.move(to: CGPoint(x: rightContentX, y: currentY))
+        middleDivider.addLine(to: CGPoint(x: rightContentX + rightContentWidth, y: currentY))
+        middleDivider.lineWidth = 1.0
+        middleDivider.stroke()
+        currentY += 18
+        
+        _ = drawText("WORK EXPERIENCE", at: CGPoint(x: rightContentX, y: currentY), font: headingFont, color: textColor)
+        currentY += headingFont.lineHeight + 10
+        
+        let experiences = Array(getExperienceEntries().prefix(3))
+        for (index, entry) in experiences.enumerated() {
+            let positionFont = ModernTemplatePDFRenderer.createModernFont(size: 12, weight: .bold)
+            _ = drawText(entry.position.uppercased(), at: CGPoint(x: rightContentX, y: currentY), font: positionFont, color: UIColor(hex: "#1F1F1F"))
+            
+            let dateFont = ModernTemplatePDFRenderer.createModernFont(size: 11, weight: .semibold)
+            let dateText = normalizeAquaDateRange(entry.dateRange)
+            let dateTextSize = dateText.size(withAttributes: [.font: dateFont])
+            _ = drawText(
+                dateText,
+                at: CGPoint(x: rightContentX + rightContentWidth - dateTextSize.width, y: currentY),
+                font: dateFont,
+                color: UIColor(hex: "#2C2C2C")
+            )
+            currentY += positionFont.lineHeight + 2
+            
+            _ = drawText(entry.company, at: CGPoint(x: rightContentX, y: currentY), font: companyFont, color: UIColor(hex: "#303030"))
+            currentY += companyFont.lineHeight + 6
+            
+            for achievement in entry.achievements.prefix(2) {
+                textColor.setFill()
+                UIBezierPath(ovalIn: CGRect(x: rightContentX + 1, y: currentY + 5, width: 3, height: 3)).fill()
+                currentY += drawMultilineText(
+                    achievement,
+                    at: CGPoint(x: rightContentX + 10, y: currentY),
+                    font: bodyFont,
+                    color: UIColor(hex: "#2D2D2D"),
+                    maxWidth: rightContentWidth - 10,
+                    lineSpacing: 2
+                )
+                currentY += 4
+            }
+            
+            if index < experiences.count - 1 {
+                currentY += 10
+            }
+        }
+    }
+    
+    private func drawAquaSidebarContent(sidebarWidth: CGFloat) {
+        let leftPadding: CGFloat = 24
+        let contentWidth = sidebarWidth - (leftPadding * 2)
+        var currentY: CGFloat = 46
+        
+        currentY = drawAquaProfilePicture(centerX: sidebarWidth / 2, topY: currentY, size: 110)
+        currentY += 22
+        
+        let sidebarHeadingFont = ModernTemplatePDFRenderer.createModernFont(size: 15, weight: .bold)
+        let sidebarBodyFont = ModernTemplatePDFRenderer.createModernFont(size: 10.5, weight: .regular)
+        let sidebarStrongFont = ModernTemplatePDFRenderer.createModernFont(size: 10.5, weight: .bold)
+        
+        _ = drawText("CONTACTS", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
+        currentY += sidebarHeadingFont.lineHeight + 12
+        
+        currentY += drawAquaContactRow(
+            userProfile.personalInfo.phone.isEmpty ? "+00 123 4567890" : userProfile.personalInfo.phone,
+            iconName: "phone.fill",
+            at: CGPoint(x: leftPadding, y: currentY),
+            maxWidth: contentWidth,
+            font: sidebarBodyFont
+        )
+        currentY += 8
+        currentY += drawAquaContactRow(
+            userProfile.personalInfo.email.isEmpty ? "user@example.com" : userProfile.personalInfo.email,
+            iconName: "envelope.fill",
+            at: CGPoint(x: leftPadding, y: currentY),
+            maxWidth: contentWidth,
+            font: sidebarBodyFont
+        )
+        currentY += 8
+        currentY += drawAquaContactRow(
+            formatAddress(),
+            iconName: "house.fill",
+            at: CGPoint(x: leftPadding, y: currentY),
+            maxWidth: contentWidth,
+            font: sidebarBodyFont
+        )
+        currentY += 14
+        
+        accentColor.setStroke()
+        let firstLine = UIBezierPath()
+        firstLine.move(to: CGPoint(x: leftPadding, y: currentY))
+        firstLine.addLine(to: CGPoint(x: leftPadding + contentWidth, y: currentY))
+        firstLine.lineWidth = 1.0
+        firstLine.stroke()
+        currentY += 22
+        
+        _ = drawText("EDUCATION", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
+        currentY += sidebarHeadingFont.lineHeight + 10
+        
+        for entry in getEducationEntries().prefix(2) {
+            _ = drawText(entry.degree.uppercased(), at: CGPoint(x: leftPadding, y: currentY), font: sidebarStrongFont, color: whiteColor)
+            currentY += sidebarStrongFont.lineHeight + 3
+            _ = drawText(normalizeAquaDateRange(entry.dateRange), at: CGPoint(x: leftPadding, y: currentY), font: sidebarBodyFont, color: whiteColor.withAlphaComponent(0.92))
+            currentY += sidebarBodyFont.lineHeight + 2
+            currentY += drawMultilineText(entry.institution, at: CGPoint(x: leftPadding, y: currentY), font: sidebarBodyFont, color: whiteColor.withAlphaComponent(0.92), maxWidth: contentWidth, lineSpacing: 2)
+            currentY += 14
+        }
+        
+        accentColor.setStroke()
+        let secondLine = UIBezierPath()
+        secondLine.move(to: CGPoint(x: leftPadding, y: currentY))
+        secondLine.addLine(to: CGPoint(x: leftPadding + contentWidth, y: currentY))
+        secondLine.lineWidth = 1.0
+        secondLine.stroke()
+        currentY += 22
+        
+        _ = drawText("SKILLS", at: CGPoint(x: leftPadding, y: currentY), font: sidebarHeadingFont, color: textColor)
+        currentY += sidebarHeadingFont.lineHeight + 10
+        
+        for skill in getSkillsList().prefix(8) {
+            whiteColor.setFill()
+            UIBezierPath(ovalIn: CGRect(x: leftPadding + 1, y: currentY + 5, width: 3, height: 3)).fill()
+            _ = drawText(skill, at: CGPoint(x: leftPadding + 12, y: currentY), font: sidebarBodyFont, color: whiteColor)
+            currentY += sidebarBodyFont.lineHeight + 4
+        }
+    }
+    
+    private func drawAquaProfilePicture(centerX: CGFloat, topY: CGFloat, size: CGFloat) -> CGFloat {
+        let imageRect = CGRect(x: centerX - (size / 2), y: topY, width: size, height: size)
+        
+        if let profileImageData = userProfile.personalInfo.profileImageData,
+           let image = UIImage(data: profileImageData),
+           let context = UIGraphicsGetCurrentContext() {
+            context.saveGState()
+            let circlePath = UIBezierPath(ovalIn: imageRect)
+            circlePath.addClip()
+            
+            // Keep aspect ratio and crop to circle bounds to avoid stretching.
+            let imageAspectRatio = image.size.width / image.size.height
+            let targetAspectRatio: CGFloat = 1.0
+            var drawRect: CGRect
+            
+            if imageAspectRatio > targetAspectRatio {
+                let drawHeight = size
+                let drawWidth = drawHeight * imageAspectRatio
+                let offsetX = (size - drawWidth) / 2
+                drawRect = CGRect(
+                    x: imageRect.minX + offsetX,
+                    y: imageRect.minY,
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            } else {
+                let drawWidth = size
+                let drawHeight = drawWidth / imageAspectRatio
+                let offsetY = (size - drawHeight) / 2
+                drawRect = CGRect(
+                    x: imageRect.minX,
+                    y: imageRect.minY + offsetY,
+                    width: drawWidth,
+                    height: drawHeight
+                )
+            }
+            
+            image.draw(in: drawRect)
+            context.restoreGState()
+        } else {
+            UIColor.white.withAlphaComponent(0.75).setFill()
+            UIBezierPath(ovalIn: imageRect).fill()
+            
+            UIColor(hex: "#6B6B6B").setFill()
+            UIBezierPath(ovalIn: CGRect(x: centerX - 14, y: topY + 28, width: 28, height: 28)).fill()
+            UIBezierPath(roundedRect: CGRect(x: centerX - 20, y: topY + 58, width: 40, height: 28), cornerRadius: 14).fill()
+        }
+        
+        textColor.setStroke()
+        let borderPath = UIBezierPath(ovalIn: imageRect)
+        borderPath.lineWidth = 3
+        borderPath.stroke()
+        
+        return topY + size
+    }
+    
+    private func drawAquaContactRow(_ text: String, iconName: String, at point: CGPoint, maxWidth: CGFloat, font: UIFont) -> CGFloat {
+        let iconSize: CGFloat = 16
+        drawAquaContactIcon(iconName, at: point, size: iconSize)
+        
+        let textHeight = drawMultilineText(
+            text,
+            at: CGPoint(x: point.x + iconSize + 8, y: point.y),
+            font: font,
+            color: whiteColor,
+            maxWidth: maxWidth - iconSize - 8,
+            lineSpacing: 2
+        )
+        
+        return max(textHeight, iconSize)
+    }
+    
+    private func drawAquaContactIcon(_ iconName: String, at point: CGPoint, size: CGFloat) {
+        let circleRect = CGRect(x: point.x, y: point.y, width: size, height: size)
+        textColor.setFill()
+        UIBezierPath(ovalIn: circleRect).fill()
+        
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: size * 0.5, weight: .bold)
+        if let baseIcon = UIImage(systemName: iconName, withConfiguration: symbolConfig) {
+            let iconImage = baseIcon.withTintColor(.white, renderingMode: .alwaysOriginal)
+            let inset = size * 0.25
+            let iconRect = circleRect.insetBy(dx: inset, dy: inset)
+            iconImage.draw(in: iconRect)
+        }
+    }
+    
+    private func normalizeAquaDateRange(_ rawDateRange: String) -> String {
+        var cleaned = rawDateRange.trimmingCharacters(in: .whitespacesAndNewlines)
+        cleaned = cleaned.replacingOccurrences(of: "(", with: "")
+        cleaned = cleaned.replacingOccurrences(of: ")", with: "")
+        cleaned = cleaned.replacingOccurrences(of: "-", with: " - ")
+        
+        while cleaned.contains("  ") {
+            cleaned = cleaned.replacingOccurrences(of: "  ", with: " ")
+        }
+        
+        return cleaned
     }
     
     private func drawSidebar() {
@@ -1993,7 +2701,6 @@ class ModernTemplatePDFRenderer {
         let contentWidth = pageSize.width - sidebarWidth - (contentPadding * 2)
         let maxContentY = pageSize.height - contentPadding - 50
         var currentY: CGFloat = 40
-        var isFirstPage = true
         
         // Draw header (name and title) on first page
         currentY = drawHeader(at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth)
@@ -2006,7 +2713,6 @@ class ModernTemplatePDFRenderer {
             if currentY + 50 > maxContentY {
                 startNewPage()
                 currentY = 40
-                isFirstPage = false
             }
             
             // Draw section header
@@ -2022,7 +2728,6 @@ class ModernTemplatePDFRenderer {
                 if currentY + entryHeight > maxContentY {
                     startNewPage()
                     currentY = 40
-                    isFirstPage = false
                 }
                 
                 currentY += drawEducationEntry(entry, at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth, isLast: index == educationEntries.count - 1)
@@ -2039,7 +2744,6 @@ class ModernTemplatePDFRenderer {
             if currentY + 50 > maxContentY {
                 startNewPage()
                 currentY = 40
-                isFirstPage = false
             }
             
             // Draw section header
@@ -2055,7 +2759,6 @@ class ModernTemplatePDFRenderer {
                 if currentY + entryHeight > maxContentY {
                     startNewPage()
                     currentY = 40
-                    isFirstPage = false
                 }
                 
                 currentY += drawExperienceEntry(entry, at: CGPoint(x: contentX, y: currentY), maxWidth: contentWidth, isLast: index == experienceEntries.count - 1)
@@ -2197,7 +2900,7 @@ class ModernTemplatePDFRenderer {
             whiteBorderPath.stroke()
             
             // Draw black outer border
-            textColor.setStroke()
+            accentColor.setStroke()
             let blackBorderPath = UIBezierPath(ovalIn: imageRect.insetBy(dx: -3, dy: -3))
             blackBorderPath.lineWidth = 3
             blackBorderPath.stroke()
@@ -2220,7 +2923,7 @@ class ModernTemplatePDFRenderer {
             whiteBorderPath.lineWidth = 6
             whiteBorderPath.stroke()
             
-            textColor.setStroke()
+            accentColor.setStroke()
             let blackBorderPath = UIBezierPath(ovalIn: imageRect.insetBy(dx: -3, dy: -3))
             blackBorderPath.lineWidth = 3
             blackBorderPath.stroke()
@@ -2244,7 +2947,13 @@ class ModernTemplatePDFRenderer {
         let jobTitle = userProfile.personalInfo.title.isEmpty ? "Graphics Designer" : userProfile.personalInfo.title
         
         // Draw title with proper text fitting
-        currentY += drawRightAlignedText(jobTitle, at: CGPoint(x: point.x, y: currentY), font: titleFont, color: textColor, maxWidth: maxWidth)
+        currentY += drawRightAlignedText(
+            jobTitle,
+            at: CGPoint(x: point.x, y: currentY),
+            font: titleFont,
+            color: isModernEdgeTemplate ? accentColor : textColor,
+            maxWidth: maxWidth
+        )
         
         return currentY
     }
@@ -2319,7 +3028,7 @@ class ModernTemplatePDFRenderer {
     // Helper methods
     private func drawSectionHeader(_ text: String, at point: CGPoint, isWhiteText: Bool) -> CGFloat {
         let font = isWhiteText ? sectionHeaderFontWhite : sectionHeaderFont
-        let color = isWhiteText ? whiteColor : textColor
+        let color = isWhiteText ? whiteColor : accentColor
         
         drawText(text, at: point, font: font, color: color)
         return font.lineHeight
@@ -2351,13 +3060,13 @@ class ModernTemplatePDFRenderer {
         var currentY = point.y
         
         // Draw timeline dot
-        textColor.setFill()
+        accentColor.setFill()
         let dotRect = CGRect(x: point.x, y: currentY + 2, width: 8, height: 8)
         UIBezierPath(ovalIn: dotRect).fill()
         
         // Draw timeline line (if not last)
         if !isLast {
-            textColor.setStroke()
+            accentColor.setStroke()
             let linePath = UIBezierPath()
             linePath.move(to: CGPoint(x: point.x + 4, y: currentY + 10))
             linePath.addLine(to: CGPoint(x: point.x + 4, y: currentY + 50))
@@ -2370,7 +3079,7 @@ class ModernTemplatePDFRenderer {
         let contentWidth = maxWidth - 15
         
         // Date
-        drawText(entry.dateRange, at: CGPoint(x: contentX, y: currentY), font: dateFont, color: textColor)
+        drawText(entry.dateRange, at: CGPoint(x: contentX, y: currentY), font: dateFont, color: accentColor)
         currentY += 18
         
         // Institution
@@ -2394,13 +3103,13 @@ class ModernTemplatePDFRenderer {
         var currentY = point.y
         
         // Draw timeline dot
-        textColor.setFill()
+        accentColor.setFill()
         let dotRect = CGRect(x: point.x, y: currentY + 2, width: 8, height: 8)
         UIBezierPath(ovalIn: dotRect).fill()
         
         // Draw timeline line (if not last)
         if !isLast {
-            textColor.setStroke()
+            accentColor.setStroke()
             let linePath = UIBezierPath()
             linePath.move(to: CGPoint(x: point.x + 4, y: currentY + 10))
             linePath.addLine(to: CGPoint(x: point.x + 4, y: currentY + 70))
@@ -2413,7 +3122,7 @@ class ModernTemplatePDFRenderer {
         let contentWidth = maxWidth - 15
         
         // Date
-        drawText(entry.dateRange, at: CGPoint(x: contentX, y: currentY), font: dateFont, color: textColor)
+        drawText(entry.dateRange, at: CGPoint(x: contentX, y: currentY), font: dateFont, color: accentColor)
         currentY += 18
         
         // Position
@@ -2427,7 +3136,7 @@ class ModernTemplatePDFRenderer {
         // Achievements
         for achievement in entry.achievements.prefix(2) {
             // Draw bullet
-            textColor.setFill()
+            accentColor.setFill()
             let bulletRect = CGRect(x: contentX, y: currentY + 4, width: 3, height: 3)
             UIBezierPath(ovalIn: bulletRect).fill()
             
