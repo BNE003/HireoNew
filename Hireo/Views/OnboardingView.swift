@@ -137,17 +137,6 @@ struct OnboardingView: View {
 
     private var welcomeStep: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Image("1")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity)
-                .frame(maxHeight: 260)
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(OnboardingPalette.line, lineWidth: 1)
-                )
-
             VStack(alignment: .leading, spacing: 10) {
                 Text(localized("Willkommen bei Hireo", "Welcome to Hireo"))
                     .font(.custom("AvenirNext-Bold", size: 34))
@@ -157,7 +146,12 @@ struct OnboardingView: View {
                     .font(.custom("AvenirNext-Regular", size: 18))
                     .foregroundColor(OnboardingPalette.muted)
             }
+
+            Spacer(minLength: 10)
+
+            bottomIllustration("1", maxHeight: 320)
         }
+        .frame(minHeight: 560, alignment: .top)
     }
 
     private var languageStep: some View {
@@ -174,7 +168,12 @@ struct OnboardingView: View {
                 languageCard(code: "de", label: "Deutsch")
                 languageCard(code: "en", label: "English")
             }
+
+            Spacer(minLength: 10)
+
+            bottomIllustration("4", maxHeight: 280)
         }
+        .frame(minHeight: 560, alignment: .top)
     }
 
     private var nameStep: some View {
@@ -207,24 +206,17 @@ struct OnboardingView: View {
 
     private var templatesStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Image("2")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity)
-                .frame(maxHeight: 240)
-                .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(Color.white.opacity(0.92))
-                        .shadow(color: OnboardingPalette.shadow, radius: 18, y: 10)
-                )
-
             Text(localized("Es warten viele moderne Templates auf dich", "You get access to many modern templates"))
                 .font(.custom("AvenirNext-DemiBold", size: 28))
                 .foregroundColor(OnboardingPalette.ink)
 
             templateBadgeRow
+
+            Spacer(minLength: 10)
+
+            bottomIllustration("2", maxHeight: 290)
         }
+        .frame(minHeight: 560, alignment: .top)
     }
 
     private var kickoffStep: some View {
@@ -242,7 +234,12 @@ struct OnboardingView: View {
                 title: localized("Nur ein paar kurze Fragen", "Just a few short questions"),
                 subtitle: localized("Danach ist dein Profil direkt startklar.", "After this, your profile is ready to go.")
             )
+
+            Spacer(minLength: 10)
+
+            bottomIllustration("5", maxHeight: 280)
         }
+        .frame(minHeight: 580, alignment: .top)
     }
 
     private var locationStep: some View {
@@ -287,7 +284,7 @@ struct OnboardingView: View {
 
     private var roleStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(localized("Welche Rolle passt zu dir, \(displayName)?", "Which role fits you best, \(displayName)?"))
+            Text(localized("Welche Rolle passt zu dir?", "Which role fits you best?"))
                 .font(.custom("AvenirNext-DemiBold", size: 30))
                 .foregroundColor(OnboardingPalette.ink)
 
@@ -448,6 +445,16 @@ struct OnboardingView: View {
                 Capsule()
                     .fill(OnboardingPalette.accentSoft)
             )
+    }
+
+    private func bottomIllustration(_ name: String, maxHeight: CGFloat) -> some View {
+        Image(name)
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: .infinity)
+            .frame(maxHeight: maxHeight)
+            .scaleEffect(1.04)
+            .offset(y: -12)
     }
 
     private func onboardingCard(icon: String, title: String, subtitle: String) -> some View {
