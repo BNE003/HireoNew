@@ -1,0 +1,30 @@
+{
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Services/ThemeManager.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/ThemeManager.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/ThemeManager.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/ThemeManager.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/ThemeManager.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/ThemeManager.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/Components/StepProgressView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/StepProgressView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/StepProgressView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/StepProgressView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/StepProgressView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/StepProgressView.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/Sections/EducationEditView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/EducationEditView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/EducationEditView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/EducationEditView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/EducationEditView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/EducationEditView.swiftdeps"
+  },
+  "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Views/Sections/LanguagesEditView.swift" : {
+    "const-values" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/LanguagesEditView.swiftconstvalues",
+    "dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/LanguagesEditView.d",
+    "diagnostics" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/LanguagesEditView.dia",
+    "object" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/LanguagesEditView.o",
+    "swift-dependencies" : "/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/DerivedDataLocal/Build/Intermediates.noindex/Hireo.build/Debug-iphonesimulator/Hireo.build/Objects-normal/arm64/LanguagesEditView.swiftdeps"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/benediktheld/Documents/dev/cv-app/Hireo"
+    ],
+    "allow": [
+      "Bash(xcodebuild:*)"
+    ]
+  }
+}

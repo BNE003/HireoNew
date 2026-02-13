@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var dataManager = DataManager.shared
+    @AppStorage("selectedLanguageCode") private var selectedLanguageCode: String = Locale.preferredLanguages.first?.hasPrefix("de") == true ? "de" : "en"
     
     var body: some View {
         Group {
@@ -19,6 +20,7 @@ struct ContentView: View {
             }
         }
         .environmentObject(dataManager)
+        .environment(\.locale, Locale(identifier: selectedLanguageCode))
     }
 }
 
