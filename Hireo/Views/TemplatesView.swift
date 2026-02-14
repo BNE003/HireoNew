@@ -8,6 +8,18 @@
 import SwiftUI
 import PDFKit
 
+private enum TemplatesPalette {
+    static let accent = Color(red: 0.972, green: 0.435, blue: 0.373)
+    static let accentSoft = Color(red: 1.0, green: 0.89, blue: 0.86)
+    static let ink = Color(red: 0.15, green: 0.20, blue: 0.25)
+    static let muted = Color(red: 0.39, green: 0.45, blue: 0.50)
+    static let slateSoft = Color(red: 0.28, green: 0.36, blue: 0.41)
+    static let surface = Color(red: 0.965, green: 0.968, blue: 0.972)
+    static let line = Color(red: 0.86, green: 0.88, blue: 0.90)
+    static let shadow = Color.black.opacity(0.08)
+    static let card = Color.white.opacity(0.95)
+}
+
 
 private enum TemplateSurface: Int, CaseIterable {
     case cv
@@ -72,9 +84,8 @@ struct TemplatesView: View {
             ZStack {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.09, green: 0.08, blue: 0.24),
-                        Color(red: 0.26, green: 0.24, blue: 0.62),
-                        Color(red: 0.72, green: 0.76, blue: 0.98)
+                        TemplatesPalette.surface,
+                        Color.white
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -82,15 +93,15 @@ struct TemplatesView: View {
                 .ignoresSafeArea()
                 
                 Circle()
-                    .fill(Color.white.opacity(0.2))
+                    .fill(TemplatesPalette.accentSoft.opacity(0.6))
                     .frame(width: 260, height: 260)
-                    .blur(radius: 36)
+                    .blur(radius: 30)
                     .offset(x: -140, y: -280)
                 
                 Circle()
-                    .fill(Color(red: 0.76, green: 0.81, blue: 1).opacity(0.55))
+                    .fill(TemplatesPalette.slateSoft.opacity(0.28))
                     .frame(width: 320, height: 320)
-                    .blur(radius: 60)
+                    .blur(radius: 52)
                     .offset(x: 170, y: 300)
                 
                 ScrollView(showsIndicators: false) {
@@ -156,10 +167,10 @@ struct TemplatesView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(greetingText)
                 .font(.system(size: 38, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.92))
+                .foregroundStyle(TemplatesPalette.ink)
             Text(selectedTab.subtitle)
                 .font(.system(size: 16, weight: .medium, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.72))
+                .foregroundStyle(TemplatesPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, 6)
@@ -179,20 +190,27 @@ struct TemplatesView: View {
                         Text(tab.title)
                             .font(.system(size: 14, weight: .semibold, design: .rounded))
                     }
-                    .foregroundStyle(selectedTab == tab ? Color.white : Color.white.opacity(0.78))
+                    .foregroundStyle(selectedTab == tab ? Color.white : TemplatesPalette.ink)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
                     .background(
                         Capsule()
-                            .fill(selectedTab == tab ? Color.white.opacity(0.18) : Color.clear)
+                            .fill(selectedTab == tab ? TemplatesPalette.accent : Color.clear)
                     )
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(5)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 1))
+        .background(
+            Capsule()
+                .fill(TemplatesPalette.card)
+                .overlay(
+                    Capsule()
+                        .stroke(TemplatesPalette.line, lineWidth: 1)
+                )
+        )
+        .shadow(color: TemplatesPalette.shadow, radius: 10, x: 0, y: 4)
     }
     
     private var heroCard: some View {
@@ -201,39 +219,39 @@ struct TemplatesView: View {
         } label: {
             HStack(spacing: 14) {
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.9))
+                    .fill(TemplatesPalette.accentSoft)
                     .frame(width: 74, height: 74)
                     .overlay(
                         Image(systemName: selectedTab.systemImage)
                             .font(.system(size: 26, weight: .medium))
-                            .foregroundStyle(Color(red: 0.33, green: 0.37, blue: 0.9))
+                            .foregroundStyle(TemplatesPalette.accent)
                     )
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(selectedTab.actionTitle)
                         .font(.system(size: 28, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(red: 0.18, green: 0.2, blue: 0.33))
+                        .foregroundStyle(TemplatesPalette.ink)
                     Text("with premium templates")
                         .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(red: 0.35, green: 0.38, blue: 0.52))
+                        .foregroundStyle(TemplatesPalette.muted)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "arrow.right")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.39, green: 0.43, blue: 0.94))
+                    .foregroundStyle(TemplatesPalette.accent)
                     .padding(.trailing, 4)
             }
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 26)
-                    .fill(Color.white.opacity(0.92))
+                    .fill(TemplatesPalette.card)
                     .overlay(
                         RoundedRectangle(cornerRadius: 26)
-                            .stroke(Color.white.opacity(0.65), lineWidth: 1)
+                            .stroke(TemplatesPalette.line, lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.14), radius: 20, x: 0, y: 10)
+                    .shadow(color: TemplatesPalette.shadow, radius: 14, x: 0, y: 8)
             )
         }
         .buttonStyle(.plain)
@@ -244,38 +262,33 @@ struct TemplatesView: View {
             HStack {
                 Text("Library")
                     .font(.system(size: 35, weight: .medium, design: .rounded))
-                    .foregroundStyle(Color.white.opacity(0.95))
+                    .foregroundStyle(TemplatesPalette.ink)
                 Spacer()
                 Image(systemName: "sparkles")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.white.opacity(0.9))
+                    .foregroundStyle(TemplatesPalette.accent)
             }
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    if selectedTab == .cv {
-                        if dataManager.cvDocuments.isEmpty {
-                            LibraryEmptyStateCard(
-                                title: "No resumes yet",
-                                subtitle: "Tap Create Resume to generate your first document.",
-                                systemImage: "doc.badge.plus"
-                            )
-                            .frame(width: 240)
-                        } else {
+            if selectedTab == .cv, dataManager.cvDocuments.isEmpty {
+                LibraryEmptyStateIllustration(
+                    title: "Noch keine Dokumente",
+                    subtitle: "Starte mit deinem ersten Lebenslauf.",
+                    illustrationName: "7"
+                )
+            } else if selectedTab == .coverLetter, dataManager.coverLetterDocuments.isEmpty {
+                LibraryEmptyStateIllustration(
+                    title: "Noch keine Dokumente",
+                    subtitle: "Erstell dein erstes Anschreiben.",
+                    illustrationName: "7"
+                )
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 14) {
+                        if selectedTab == .cv {
                             ForEach(dataManager.cvDocuments) { document in
                                 CVDocumentThumbnailView(document: document)
                                     .frame(width: 176)
                                     .transition(.opacity.combined(with: .scale))
                             }
-                        }
-                    } else {
-                        if dataManager.coverLetterDocuments.isEmpty {
-                            LibraryEmptyStateCard(
-                                title: "No letters yet",
-                                subtitle: "Tap Create Letter to generate your first document.",
-                                systemImage: "envelope.badge"
-                            )
-                            .frame(width: 240)
                         } else {
                             ForEach(dataManager.coverLetterDocuments) { document in
                                 CoverLetterDocumentThumbnailView(document: document)
@@ -284,8 +297,8 @@ struct TemplatesView: View {
                             }
                         }
                     }
+                    .padding(.vertical, 6)
                 }
-                .padding(.vertical, 6)
             }
         }
     }
@@ -300,34 +313,30 @@ struct TemplatesView: View {
     }
 }
 
-private struct LibraryEmptyStateCard: View {
+private struct LibraryEmptyStateIllustration: View {
     let title: String
     let subtitle: String
-    let systemImage: String
+    let illustrationName: String
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color(red: 0.39, green: 0.43, blue: 0.94))
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color(red: 0.16, green: 0.17, blue: 0.28))
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .foregroundStyle(TemplatesPalette.ink)
             Text(subtitle)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(Color(red: 0.4, green: 0.42, blue: 0.54))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(TemplatesPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 2)
+            
+            Image(illustrationName)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .frame(height: 245)
+                .padding(.top, 14)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(0.88))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.white.opacity(0.55), lineWidth: 1)
-                )
-        )
+        .padding(.vertical, 4)
     }
 }
 
@@ -421,11 +430,11 @@ struct CVTemplateThumbnail: View {
                 Group {
                     if isGeneratingThumbnail {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemGray6))
+                            .fill(TemplatesPalette.surface)
                             .frame(height: 220)
                             .overlay(
                                 ProgressView()
-                                    .tint(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                                    .tint(TemplatesPalette.accent)
                             )
                     } else if let thumbnailData = thumbnailPDFData {
                         PDFThumbnailView(pdfData: thumbnailData)
@@ -433,12 +442,12 @@ struct CVTemplateThumbnail: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     } else {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemGray6))
+                            .fill(TemplatesPalette.surface)
                             .frame(height: 220)
                             .overlay(
                                 Image(systemName: "doc.text")
                                     .font(.system(size: 30))
-                                    .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                                    .foregroundColor(TemplatesPalette.accent)
                             )
                     }
                 }
@@ -446,23 +455,23 @@ struct CVTemplateThumbnail: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(template.name)
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color(red: 0.16, green: 0.17, blue: 0.28))
+                        .foregroundStyle(TemplatesPalette.ink)
                         .lineLimit(1)
                     Text(template.category.rawValue)
                         .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(red: 0.4, green: 0.42, blue: 0.54))
+                        .foregroundStyle(TemplatesPalette.muted)
                 }
                 .padding(.horizontal, 3)
             }
             .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(Color.white.opacity(0.9))
+                    .fill(TemplatesPalette.card)
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                            .stroke(TemplatesPalette.line, lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.1), radius: 14, x: 0, y: 8)
+                    .shadow(color: TemplatesPalette.shadow, radius: 10, x: 0, y: 6)
             )
         }
         .buttonStyle(.plain)
@@ -512,11 +521,11 @@ struct CoverLetterTemplateThumbnail: View {
                 Group {
                     if isGeneratingThumbnail {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemGray6))
+                            .fill(TemplatesPalette.surface)
                             .frame(height: 220)
                             .overlay(
                                 ProgressView()
-                                    .tint(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                                    .tint(TemplatesPalette.accent)
                             )
                     } else if let thumbnailData = thumbnailPDFData {
                         PDFThumbnailView(pdfData: thumbnailData)
@@ -524,12 +533,12 @@ struct CoverLetterTemplateThumbnail: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     } else {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemGray6))
+                            .fill(TemplatesPalette.surface)
                             .frame(height: 220)
                             .overlay(
                                 Image(systemName: "envelope")
                                     .font(.system(size: 30))
-                                    .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                                    .foregroundColor(TemplatesPalette.accent)
                             )
                     }
                 }
@@ -537,23 +546,23 @@ struct CoverLetterTemplateThumbnail: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(template.name)
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color(red: 0.16, green: 0.17, blue: 0.28))
+                        .foregroundStyle(TemplatesPalette.ink)
                         .lineLimit(1)
                     Text(template.category.rawValue)
                         .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(red: 0.4, green: 0.42, blue: 0.54))
+                        .foregroundStyle(TemplatesPalette.muted)
                 }
                 .padding(.horizontal, 3)
             }
             .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(Color.white.opacity(0.9))
+                    .fill(TemplatesPalette.card)
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                            .stroke(TemplatesPalette.line, lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.1), radius: 14, x: 0, y: 8)
+                    .shadow(color: TemplatesPalette.shadow, radius: 10, x: 0, y: 6)
             )
         }
         .buttonStyle(.plain)
@@ -618,22 +627,22 @@ struct CVTemplateDetailView: View {
                             .padding(.horizontal, 20)
                     } else {
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemGray6))
+                            .fill(TemplatesPalette.surface)
                             .frame(height: geometry.size.height * 0.6)
                             .overlay(
                                 VStack(spacing: 16) {
                                     Image(systemName: "doc.text")
                                         .font(.system(size: 60, weight: .light))
-                                        .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                                        .foregroundColor(TemplatesPalette.accent)
                                     
                                     Text(template.name)
                                         .font(.title2)
                                         .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(TemplatesPalette.ink)
                                     
                                     Text(template.description)
                                         .font(.body)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(TemplatesPalette.muted)
                                         .multilineTextAlignment(.center)
                                         .padding(.horizontal, 40)
                                 }
@@ -661,7 +670,7 @@ struct CVTemplateDetailView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color(hex: template.colorSchemes.first?.primaryColor ?? "#007AFF"))
+                            .background(TemplatesPalette.accent)
                             .foregroundColor(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
@@ -674,19 +683,23 @@ struct CVTemplateDetailView: View {
                         .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(Color(.systemGray5))
-                        .foregroundColor(.primary)
+                        .background(TemplatesPalette.card)
+                        .foregroundColor(TemplatesPalette.ink)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(TemplatesPalette.line, lineWidth: 1)
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .disabled(dataManager.userProfile == nil)
                         
                         Text("Template preview uses dummy data")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(TemplatesPalette.muted)
                         
                         if dataManager.userProfile == nil {
                             Text("Complete your profile first")
                                 .font(.subheadline)
-                                .foregroundColor(.orange)
+                                .foregroundColor(TemplatesPalette.accent)
                                 .padding(.top, 8)
                         }
                     }
@@ -811,22 +824,22 @@ struct CoverLetterTemplateDetailView: View {
                             .padding(.horizontal, 20)
                     } else {
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemGray6))
+                            .fill(TemplatesPalette.surface)
                             .frame(height: geometry.size.height * 0.6)
                             .overlay(
                                 VStack(spacing: 16) {
                                     Image(systemName: "envelope")
                                         .font(.system(size: 60, weight: .light))
-                                        .foregroundColor(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                                        .foregroundColor(TemplatesPalette.accent)
                                     
                                     Text(template.name)
                                         .font(.title2)
                                         .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(TemplatesPalette.ink)
                                     
                                     Text(template.description)
                                         .font(.body)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(TemplatesPalette.muted)
                                         .multilineTextAlignment(.center)
                                         .padding(.horizontal, 40)
                                 }
@@ -850,7 +863,7 @@ struct CoverLetterTemplateDetailView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color(hex: template.colorSchemes.first?.primaryColor ?? "#34C759"))
+                            .background(TemplatesPalette.accent)
                             .foregroundColor(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
@@ -863,15 +876,19 @@ struct CoverLetterTemplateDetailView: View {
                         .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(Color(.systemGray5))
-                        .foregroundColor(.primary)
+                        .background(TemplatesPalette.card)
+                        .foregroundColor(TemplatesPalette.ink)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(TemplatesPalette.line, lineWidth: 1)
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .disabled(dataManager.userProfile == nil)
                         
                         if dataManager.userProfile == nil {
                             Text("Complete your profile first")
                                 .font(.subheadline)
-                                .foregroundColor(.orange)
+                                .foregroundColor(TemplatesPalette.accent)
                                 .padding(.top, 8)
                         }
                     }
