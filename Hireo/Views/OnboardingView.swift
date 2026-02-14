@@ -16,9 +16,11 @@ struct OnboardingView: View {
     @State private var educationInstitution = ""
     @State private var educationDegree = ""
     @State private var educationField = ""
+    @State private var educationEntries: [EducationEntry] = []
     @State private var workCompany = ""
     @State private var workPosition = ""
     @State private var workHighlights = ""
+    @State private var workEntries: [WorkExperienceEntry] = []
     @State private var skillsInput = ""
     @State private var languagesInput = ""
     @State private var interestsInput = ""
@@ -413,6 +415,42 @@ struct OnboardingView: View {
                 keyboardType: .default,
                 autocapitalization: .words
             )
+
+            Button(action: addEducationEntry) {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus")
+                    Text(localized("Weitere hinzufügen", "Add another"))
+                }
+                .font(.custom("AvenirNext-DemiBold", size: 15))
+                .foregroundColor(OnboardingPalette.accent)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(OnboardingPalette.accentSoft)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(OnboardingPalette.accent.opacity(0.4), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .opacity(educationDraftEntry == nil ? 0.55 : 1)
+            .disabled(educationDraftEntry == nil)
+
+            if !educationEntries.isEmpty {
+                VStack(spacing: 10) {
+                    ForEach(Array(educationEntries.enumerated()), id: \.element.id) { index, item in
+                        onboardingEntryCard(
+                            title: item.degree.trimmed.isEmpty ? localized("Ausbildung", "Education") : item.degree,
+                            subtitle: item.institution.trimmed.isEmpty ? item.fieldOfStudy : item.institution,
+                            tertiary: item.fieldOfStudy
+                        ) {
+                            removeEducationEntry(at: index)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -452,6 +490,42 @@ struct OnboardingView: View {
                 autocapitalization: .sentences,
                 axis: .vertical
             )
+
+            Button(action: addWorkEntry) {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus")
+                    Text(localized("Weitere hinzufügen", "Add another"))
+                }
+                .font(.custom("AvenirNext-DemiBold", size: 15))
+                .foregroundColor(OnboardingPalette.accent)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(OnboardingPalette.accentSoft)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(OnboardingPalette.accent.opacity(0.4), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .opacity(workDraftEntry == nil ? 0.55 : 1)
+            .disabled(workDraftEntry == nil)
+
+            if !workEntries.isEmpty {
+                VStack(spacing: 10) {
+                    ForEach(Array(workEntries.enumerated()), id: \.element.id) { index, item in
+                        onboardingEntryCard(
+                            title: item.position.trimmed.isEmpty ? localized("Berufserfahrung", "Work Experience") : item.position,
+                            subtitle: item.company,
+                            tertiary: item.description
+                        ) {
+                            removeWorkEntry(at: index)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -652,6 +726,51 @@ struct OnboardingView: View {
             )
     }
 
+    private func onboardingEntryCard(
+        title: String,
+        subtitle: String,
+        tertiary: String,
+        onRemove: @escaping () -> Void
+    ) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title.trimmed.isEmpty ? localized("Eintrag", "Entry") : title)
+                    .font(.custom("AvenirNext-DemiBold", size: 15))
+                    .foregroundColor(OnboardingPalette.ink)
+
+                if !subtitle.trimmed.isEmpty {
+                    Text(subtitle)
+                        .font(.custom("AvenirNext-Medium", size: 14))
+                        .foregroundColor(OnboardingPalette.muted)
+                }
+
+                if !tertiary.trimmed.isEmpty {
+                    Text(tertiary)
+                        .font(.custom("AvenirNext-Regular", size: 13))
+                        .foregroundColor(OnboardingPalette.muted)
+                        .lineLimit(2)
+                }
+            }
+
+            Spacer()
+
+            Button(action: onRemove) {
+                Image(systemName: "trash")
+                    .foregroundColor(OnboardingPalette.accent)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.95))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(OnboardingPalette.line, lineWidth: 1)
+                )
+        )
+    }
+
     private func bottomIllustration(_ name: String, maxHeight: CGFloat) -> some View {
         Image(name)
             .resizable()
@@ -780,36 +899,52 @@ struct OnboardingView: View {
         nextStep()
     }
 
-    private var educationEntriesPreview: [EducationEntry] {
+    private var educationDraftEntry: EducationEntry? {
         let institution = educationInstitution.trimmed
         let degree = educationDegree.trimmed
         let field = educationField.trimmed
 
         guard !(institution.isEmpty && degree.isEmpty && field.isEmpty) else {
-            return []
+            return nil
         }
 
         var entry = EducationEntry()
         entry.institution = institution
         entry.degree = degree
         entry.fieldOfStudy = field
-        return [entry]
+        return entry
     }
 
-    private var workEntriesPreview: [WorkExperienceEntry] {
+    private var educationEntriesPreview: [EducationEntry] {
+        var result = educationEntries
+        if let draft = educationDraftEntry {
+            result.append(draft)
+        }
+        return result
+    }
+
+    private var workDraftEntry: WorkExperienceEntry? {
         let company = workCompany.trimmed
         let position = workPosition.trimmed
         let highlights = workHighlights.trimmed
 
         guard !(company.isEmpty && position.isEmpty && highlights.isEmpty) else {
-            return []
+            return nil
         }
 
         var entry = WorkExperienceEntry()
         entry.company = company
         entry.position = position
         entry.description = highlights
-        return [entry]
+        return entry
+    }
+
+    private var workEntriesPreview: [WorkExperienceEntry] {
+        var result = workEntries
+        if let draft = workDraftEntry {
+            result.append(draft)
+        }
+        return result
     }
 
     private var skillValuesPreview: [String] {
@@ -846,6 +981,32 @@ struct OnboardingView: View {
         }
 
         return result
+    }
+
+    private func addEducationEntry() {
+        guard let entry = educationDraftEntry else { return }
+        educationEntries.append(entry)
+        educationInstitution = ""
+        educationDegree = ""
+        educationField = ""
+    }
+
+    private func removeEducationEntry(at index: Int) {
+        guard educationEntries.indices.contains(index) else { return }
+        educationEntries.remove(at: index)
+    }
+
+    private func addWorkEntry() {
+        guard let entry = workDraftEntry else { return }
+        workEntries.append(entry)
+        workCompany = ""
+        workPosition = ""
+        workHighlights = ""
+    }
+
+    private func removeWorkEntry(at index: Int) {
+        guard workEntries.indices.contains(index) else { return }
+        workEntries.remove(at: index)
     }
 
     private func saveProfile() {
