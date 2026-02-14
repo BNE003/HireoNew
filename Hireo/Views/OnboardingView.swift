@@ -13,6 +13,15 @@ struct OnboardingView: View {
     @State private var currentStep: OnboardingStep = .welcome
     @State private var profile = UserProfile()
     @State private var animateContent = false
+    @State private var educationInstitution = ""
+    @State private var educationDegree = ""
+    @State private var educationField = ""
+    @State private var workCompany = ""
+    @State private var workPosition = ""
+    @State private var workHighlights = ""
+    @State private var skillsInput = ""
+    @State private var languagesInput = ""
+    @State private var interestsInput = ""
 
     var body: some View {
         NavigationStack {
@@ -119,6 +128,8 @@ struct OnboardingView: View {
                 nameStep
             case .templates:
                 templatesStep
+            case .free:
+                freeStep
             case .kickoff:
                 kickoffStep
             case .location:
@@ -127,6 +138,14 @@ struct OnboardingView: View {
                 roleStep
             case .contact:
                 contactStep
+            case .education:
+                educationStep
+            case .work:
+                workStep
+            case .skills:
+                skillsStep
+            case .languages:
+                languagesStep
             case .summary:
                 summaryStep
             }
@@ -217,6 +236,34 @@ struct OnboardingView: View {
             bottomIllustration("2", maxHeight: 290)
         }
         .frame(minHeight: 560, alignment: .top)
+    }
+
+    private var freeStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(localized("100% Kostenlos", "100% Free"))
+                .font(.custom("AvenirNext-Bold", size: 38))
+                .foregroundColor(OnboardingPalette.ink)
+                .overlay(alignment: .bottomLeading) {
+                    Capsule()
+                        .fill(OnboardingPalette.accent) // Same color as enabled "Weiter" button
+                        .frame(height: 6)
+                        .offset(y: 8)
+                }
+                .padding(.bottom, 8)
+
+            Text(localized("Keine Werbung", "No Ads"))
+                .font(.custom("AvenirNext-DemiBold", size: 32))
+                .foregroundColor(OnboardingPalette.muted)
+
+            Text(localized("Du kannst dich voll auf deinen Lebenslauf konzentrieren.", "You can focus fully on building your resume."))
+                .font(.custom("AvenirNext-Regular", size: 17))
+                .foregroundColor(OnboardingPalette.muted)
+
+            Spacer(minLength: 10)
+
+            bottomIllustration("6", maxHeight: 300)
+        }
+        .frame(minHeight: 580, alignment: .top)
     }
 
     private var kickoffStep: some View {
@@ -331,13 +378,144 @@ struct OnboardingView: View {
         }
     }
 
+    private var educationStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            optionalStepBadge
+
+            Text(localized("\(displayName), was war dein letzter Ausbildungsweg?", "\(displayName), what's your latest education path?"))
+                .font(.custom("AvenirNext-DemiBold", size: 30))
+                .foregroundColor(OnboardingPalette.ink)
+
+            Text(localized("Schule, Ausbildung oder Uni. Kurz reicht vollkommen.", "School, training or university. Short and clean is perfect."))
+                .font(.custom("AvenirNext-Regular", size: 16))
+                .foregroundColor(OnboardingPalette.muted)
+
+            OnboardingInputField(
+                title: localized("Schule / Uni", "School / University"),
+                text: $educationInstitution,
+                prompt: localized("z. B. TU München", "e.g. University of Hamburg"),
+                keyboardType: .default,
+                autocapitalization: .words
+            )
+
+            OnboardingInputField(
+                title: localized("Abschluss", "Degree"),
+                text: $educationDegree,
+                prompt: localized("z. B. B.Sc. Informatik", "e.g. B.Sc. Computer Science"),
+                keyboardType: .default,
+                autocapitalization: .words
+            )
+
+            OnboardingInputField(
+                title: localized("Fachrichtung (optional)", "Field (optional)"),
+                text: $educationField,
+                prompt: localized("z. B. Wirtschaftsinformatik", "e.g. Software Engineering"),
+                keyboardType: .default,
+                autocapitalization: .words
+            )
+        }
+    }
+
+    private var workStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            optionalStepBadge
+
+            Text(localized("\(displayName), wo hast du schon gearbeitet?", "\(displayName), where have you worked already?"))
+                .font(.custom("AvenirNext-DemiBold", size: 30))
+                .foregroundColor(OnboardingPalette.ink)
+
+            Text(localized("Füge gern erstmal nur die wichtigste Station hinzu.", "Start with your most relevant role first."))
+                .font(.custom("AvenirNext-Regular", size: 16))
+                .foregroundColor(OnboardingPalette.muted)
+
+            OnboardingInputField(
+                title: localized("Unternehmen", "Company"),
+                text: $workCompany,
+                prompt: localized("z. B. Muster GmbH", "e.g. Acme Inc."),
+                keyboardType: .default,
+                autocapitalization: .words
+            )
+
+            OnboardingInputField(
+                title: localized("Position", "Role"),
+                text: $workPosition,
+                prompt: localized("z. B. Product Designer", "e.g. Product Designer"),
+                keyboardType: .default,
+                autocapitalization: .words
+            )
+
+            OnboardingInputField(
+                title: localized("Kurz zu deinen Aufgaben (optional)", "Quick highlights (optional)"),
+                text: $workHighlights,
+                prompt: localized("Was war dein Impact?", "What impact did you have?"),
+                keyboardType: .default,
+                autocapitalization: .sentences,
+                axis: .vertical
+            )
+        }
+    }
+
+    private var skillsStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            optionalStepBadge
+
+            Text(localized("Was kannst du richtig gut, \(displayName)?", "What are you really good at, \(displayName)?"))
+                .font(.custom("AvenirNext-DemiBold", size: 30))
+                .foregroundColor(OnboardingPalette.ink)
+
+            Text(localized("Mehrere Skills einfach mit Komma trennen.", "Just separate multiple skills with commas."))
+                .font(.custom("AvenirNext-Regular", size: 16))
+                .foregroundColor(OnboardingPalette.muted)
+
+            OnboardingInputField(
+                title: localized("Skills", "Skills"),
+                text: $skillsInput,
+                prompt: localized("z. B. Swift, UI Design, Figma", "e.g. Swift, UI Design, Figma"),
+                keyboardType: .default,
+                autocapitalization: .words,
+                axis: .vertical
+            )
+        }
+    }
+
+    private var languagesStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            optionalStepBadge
+
+            Text(localized("Zum Schluss noch Sprachen & Interessen?", "Last one: languages and interests?"))
+                .font(.custom("AvenirNext-DemiBold", size: 30))
+                .foregroundColor(OnboardingPalette.ink)
+
+            Text(localized("Auch hier einfach Komma-getrennt eintragen.", "Comma-separated is perfect here too."))
+                .font(.custom("AvenirNext-Regular", size: 16))
+                .foregroundColor(OnboardingPalette.muted)
+
+            OnboardingInputField(
+                title: localized("Sprachen", "Languages"),
+                text: $languagesInput,
+                prompt: localized("z. B. Deutsch, Englisch", "e.g. German, English"),
+                keyboardType: .default,
+                autocapitalization: .words
+            )
+
+            OnboardingInputField(
+                title: localized("Interessen (optional)", "Interests (optional)"),
+                text: $interestsInput,
+                prompt: localized("z. B. Reisen, Fotografie, Rennrad", "e.g. Travel, Photography, Cycling"),
+                keyboardType: .default,
+                autocapitalization: .words,
+                axis: .vertical
+            )
+        }
+    }
+
     private var summaryStep: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(localized("Perfekt, \(displayName)", "Perfect, \(displayName)"))
                 .font(.custom("AvenirNext-Bold", size: 34))
                 .foregroundColor(OnboardingPalette.ink)
 
-            Text(localized("Dein Profil ist bereit. Jetzt kannst du direkt mit dem ersten Lebenslauf starten.", "Your profile is ready. You can now start your first resume right away."))
+            Text(localized("Alles startklar. Ein Klick und dein Profil ist komplett gespeichert.", "Everything is ready. One tap and your profile is fully saved."))
                 .font(.custom("AvenirNext-Regular", size: 18))
                 .foregroundColor(OnboardingPalette.muted)
 
@@ -346,6 +524,11 @@ struct OnboardingView: View {
                 summaryRow(title: localized("Ort", "Location"), value: locationLine)
                 summaryRow(title: localized("Rolle", "Role"), value: profile.personalInfo.title)
                 summaryRow(title: localized("E-Mail", "Email"), value: profile.personalInfo.email)
+                summaryRow(title: localized("Ausbildung", "Education"), value: entryCountText(educationEntriesPreview.count))
+                summaryRow(title: localized("Erfahrung", "Experience"), value: entryCountText(workEntriesPreview.count))
+                summaryRow(title: localized("Skills", "Skills"), value: entryCountText(skillValuesPreview.count))
+                summaryRow(title: localized("Sprachen", "Languages"), value: entryCountText(languageValuesPreview.count))
+                summaryRow(title: localized("Interessen", "Interests"), value: entryCountText(interestValuesPreview.count))
             }
             .padding(16)
             .background(
@@ -357,42 +540,52 @@ struct OnboardingView: View {
     }
 
     private var footerButtons: some View {
-        HStack(spacing: 12) {
-            if currentStep != .welcome {
-                Button(action: previousStep) {
-                    Text(localized("Zurück", "Back"))
-                        .font(.custom("AvenirNext-DemiBold", size: 16))
-                        .foregroundColor(OnboardingPalette.ink)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.white.opacity(0.75))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(OnboardingPalette.line, lineWidth: 1)
-                                )
-                        )
+        VStack(spacing: 8) {
+            if currentStep.isOptionalDataStep {
+                Button(action: skipStep) {
+                    Text(localized("Diesen Schritt überspringen", "Skip this step"))
+                        .font(.custom("AvenirNext-Medium", size: 14))
+                        .foregroundColor(OnboardingPalette.muted)
                 }
             }
 
-            Button(action: nextStep) {
-                HStack(spacing: 8) {
-                    Text(nextButtonTitle)
-                        .font(.custom("AvenirNext-DemiBold", size: 16))
-                    Image(systemName: currentStep == .summary ? "checkmark" : "arrow.right")
-                        .font(.system(size: 14, weight: .semibold))
+            HStack(spacing: 12) {
+                if currentStep != .welcome {
+                    Button(action: previousStep) {
+                        Text(localized("Zurück", "Back"))
+                            .font(.custom("AvenirNext-DemiBold", size: 16))
+                            .foregroundColor(OnboardingPalette.ink)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color.white.opacity(0.75))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(OnboardingPalette.line, lineWidth: 1)
+                                    )
+                            )
+                    }
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(canProceed ? OnboardingPalette.accent : OnboardingPalette.line)
-                        .shadow(color: canProceed ? OnboardingPalette.accent.opacity(0.35) : .clear, radius: 12, y: 7)
-                )
+
+                Button(action: nextStep) {
+                    HStack(spacing: 8) {
+                        Text(nextButtonTitle)
+                            .font(.custom("AvenirNext-DemiBold", size: 16))
+                        Image(systemName: currentStep == .summary ? "checkmark" : "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(canProceed ? OnboardingPalette.accent : OnboardingPalette.line)
+                            .shadow(color: canProceed ? OnboardingPalette.accent.opacity(0.35) : .clear, radius: 12, y: 7)
+                    )
+                }
+                .disabled(!canProceed)
             }
-            .disabled(!canProceed)
         }
     }
 
@@ -441,6 +634,18 @@ struct OnboardingView: View {
             .foregroundColor(OnboardingPalette.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(OnboardingPalette.accentSoft)
+            )
+    }
+
+    private var optionalStepBadge: some View {
+        Text(localized("Optional", "Optional"))
+            .font(.custom("AvenirNext-DemiBold", size: 12))
+            .foregroundColor(OnboardingPalette.accent)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(
                 Capsule()
                     .fill(OnboardingPalette.accentSoft)
@@ -522,6 +727,10 @@ struct OnboardingView: View {
             return localized("Daten starten", "Start details")
         }
 
+        if currentStep == .contact {
+            return localized("Weiter zu Extras", "Continue to extras")
+        }
+
         return localized("Weiter", "Continue")
     }
 
@@ -566,12 +775,98 @@ struct OnboardingView: View {
         }
     }
 
+    private func skipStep() {
+        guard currentStep.isOptionalDataStep else { return }
+        nextStep()
+    }
+
+    private var educationEntriesPreview: [EducationEntry] {
+        let institution = educationInstitution.trimmed
+        let degree = educationDegree.trimmed
+        let field = educationField.trimmed
+
+        guard !(institution.isEmpty && degree.isEmpty && field.isEmpty) else {
+            return []
+        }
+
+        var entry = EducationEntry()
+        entry.institution = institution
+        entry.degree = degree
+        entry.fieldOfStudy = field
+        return [entry]
+    }
+
+    private var workEntriesPreview: [WorkExperienceEntry] {
+        let company = workCompany.trimmed
+        let position = workPosition.trimmed
+        let highlights = workHighlights.trimmed
+
+        guard !(company.isEmpty && position.isEmpty && highlights.isEmpty) else {
+            return []
+        }
+
+        var entry = WorkExperienceEntry()
+        entry.company = company
+        entry.position = position
+        entry.description = highlights
+        return [entry]
+    }
+
+    private var skillValuesPreview: [String] {
+        parseList(skillsInput)
+    }
+
+    private var languageValuesPreview: [String] {
+        parseList(languagesInput)
+    }
+
+    private var interestValuesPreview: [String] {
+        parseList(interestsInput)
+    }
+
+    private func entryCountText(_ count: Int) -> String {
+        count == 0 ? localized("Keine", "None") : "\(count)"
+    }
+
+    private func parseList(_ text: String) -> [String] {
+        let separators = CharacterSet(charactersIn: ",;\n")
+        let rawItems = text.components(separatedBy: separators)
+            .map { $0.trimmed }
+            .filter { !$0.isEmpty }
+
+        var seen = Set<String>()
+        var result: [String] = []
+
+        for item in rawItems {
+            let key = item.lowercased()
+            if !seen.contains(key) {
+                seen.insert(key)
+                result.append(item)
+            }
+        }
+
+        return result
+    }
+
     private func saveProfile() {
         profile.personalInfo.firstName = profile.personalInfo.firstName.trimmed
         profile.personalInfo.lastName = profile.personalInfo.lastName.trimmed
         profile.personalInfo.email = profile.personalInfo.email.trimmed
         profile.personalInfo.address.city = profile.personalInfo.address.city.trimmed
         profile.personalInfo.address.country = profile.personalInfo.address.country.trimmed
+        profile.education = educationEntriesPreview
+        profile.workExperience = workEntriesPreview
+
+        if skillValuesPreview.isEmpty {
+            profile.skills = []
+        } else {
+            var coreSkills = SkillCategory(categoryName: localized("Kernskills", "Core Skills"))
+            coreSkills.skills = skillValuesPreview.map { Skill(name: $0, proficiencyLevel: .intermediate) }
+            profile.skills = [coreSkills]
+        }
+
+        profile.languages = languageValuesPreview.map { Language(name: $0, proficiencyLevel: .intermediate) }
+        profile.interests = interestValuesPreview
         profile.lastUpdated = Date()
         dataManager.saveUserProfile(profile)
     }
@@ -582,18 +877,36 @@ private enum OnboardingStep: Int, CaseIterable {
     case language
     case name
     case templates
+    case free
     case kickoff
     case location
     case role
     case contact
+    case education
+    case work
+    case skills
+    case languages
     case summary
 
     func groupTitle(isGerman: Bool) -> String {
         switch self {
-        case .welcome, .language, .name, .templates, .kickoff:
+        case .welcome, .language, .name, .templates, .free, .kickoff:
             return isGerman ? "Onboarding" : "Onboarding"
-        case .location, .role, .contact, .summary:
+        case .location, .role, .contact:
             return isGerman ? "Profil" : "Profile"
+        case .education, .work, .skills, .languages:
+            return isGerman ? "Extras" : "Extras"
+        case .summary:
+            return isGerman ? "Fertig" : "Finish"
+        }
+    }
+
+    var isOptionalDataStep: Bool {
+        switch self {
+        case .education, .work, .skills, .languages:
+            return true
+        default:
+            return false
         }
     }
 }

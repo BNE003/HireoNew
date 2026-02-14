@@ -33,29 +33,17 @@
 		A7334EBD2E54E8BC001C61AC /* Exceptions for "Hireo" folder in "Hireo" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				.gitignore,
 				Untitled.swift,
 			);
 			target = A7F174C12E4E881400B718FB /* Hireo */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		A77B99A02F3FBC620046B0F0 /* Exceptions for "Hireo" folder in "Compile Sources" phase from "Hireo" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = A7F174BE2E4E881400B718FB /* Sources */;
-			membershipExceptions = (
-				.gitignore,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A7F174C42E4E881400B718FB /* Hireo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				A7334EBD2E54E8BC001C61AC /* Exceptions for "Hireo" folder in "Hireo" target */,
-				A77B99A02F3FBC620046B0F0 /* Exceptions for "Hireo" folder in "Compile Sources" phase from "Hireo" target */,
 			);
 			path = Hireo;
 			sourceTree = "<group>";
