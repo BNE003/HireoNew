@@ -2,9 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>LastAccessedDate</key>
-	<date>2026-02-14T15:19:38Z</date>
-	<key>WorkspacePath</key>
-	<string>/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo.xcodeproj</string>
+	<key>application-identifier</key>
+	<string>V582AWS3L8.b.held.Hireo</string>
 </dict>
 </plist>

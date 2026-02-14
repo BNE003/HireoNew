@@ -37,6 +37,21 @@ extension DeveloperToolsSupport.ImageResource {
     /// The "2" asset catalog image resource.
     static let _2 = DeveloperToolsSupport.ImageResource(name: "2", bundle: resourceBundle)
 
+    /// The "3" asset catalog image resource.
+    static let _3 = DeveloperToolsSupport.ImageResource(name: "3", bundle: resourceBundle)
+
+    /// The "4" asset catalog image resource.
+    static let _4 = DeveloperToolsSupport.ImageResource(name: "4", bundle: resourceBundle)
+
+    /// The "5" asset catalog image resource.
+    static let _5 = DeveloperToolsSupport.ImageResource(name: "5", bundle: resourceBundle)
+
+    /// The "6" asset catalog image resource.
+    static let _6 = DeveloperToolsSupport.ImageResource(name: "6", bundle: resourceBundle)
+
+    /// The "7" asset catalog image resource.
+    static let _7 = DeveloperToolsSupport.ImageResource(name: "7", bundle: resourceBundle)
+
 }
 
 // MARK: - Color Symbol Extensions -
@@ -94,6 +109,51 @@ extension AppKit.NSImage {
 #endif
     }
 
+    /// The "3" asset catalog image.
+    static var _3: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: ._3)
+#else
+        .init()
+#endif
+    }
+
+    /// The "4" asset catalog image.
+    static var _4: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: ._4)
+#else
+        .init()
+#endif
+    }
+
+    /// The "5" asset catalog image.
+    static var _5: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: ._5)
+#else
+        .init()
+#endif
+    }
+
+    /// The "6" asset catalog image.
+    static var _6: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: ._6)
+#else
+        .init()
+#endif
+    }
+
+    /// The "7" asset catalog image.
+    static var _7: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: ._7)
+#else
+        .init()
+#endif
+    }
+
 }
 #endif
 
@@ -115,6 +175,51 @@ extension UIKit.UIImage {
     static var _2: UIKit.UIImage {
 #if !os(watchOS)
         .init(resource: ._2)
+#else
+        .init()
+#endif
+    }
+
+    /// The "3" asset catalog image.
+    static var _3: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: ._3)
+#else
+        .init()
+#endif
+    }
+
+    /// The "4" asset catalog image.
+    static var _4: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: ._4)
+#else
+        .init()
+#endif
+    }
+
+    /// The "5" asset catalog image.
+    static var _5: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: ._5)
+#else
+        .init()
+#endif
+    }
+
+    /// The "6" asset catalog image.
+    static var _6: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: ._6)
+#else
+        .init()
+#endif
+    }
+
+    /// The "7" asset catalog image.
+    static var _7: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: ._7)
 #else
         .init()
 #endif

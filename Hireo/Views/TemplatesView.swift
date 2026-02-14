@@ -72,6 +72,10 @@ struct TemplatesView: View {
     @State private var showingCVTemplatePicker = false
     @State private var showingCoverLetterTemplatePicker = false
     @State private var animateIn = false
+    
+    private var isMaxSizedPhone: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone && UIScreen.main.bounds.width >= 428
+    }
 
     private var greetingText: String {
         let firstName = dataManager.userProfile?.personalInfo.firstName
@@ -98,12 +102,6 @@ struct TemplatesView: View {
                     .blur(radius: 30)
                     .offset(x: -140, y: -280)
                 
-                Circle()
-                    .fill(TemplatesPalette.slateSoft.opacity(0.28))
-                    .frame(width: 320, height: 320)
-                    .blur(radius: 52)
-                    .offset(x: 170, y: 300)
-                
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
                         headerSection
@@ -127,12 +125,11 @@ struct TemplatesView: View {
                             .animation(.easeOut(duration: 0.42).delay(0.2), value: animateIn)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 10)
+                    .padding(.top, 14)
                     .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Templates")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingCVTemplateDetail) {
                 if let template = selectedCVTemplate {
                     CVTemplateDetailView(template: template)
@@ -173,7 +170,7 @@ struct TemplatesView: View {
                 .foregroundStyle(TemplatesPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.top, 6)
+        .padding(.top, 12)
     }
     
     private var typeSwitch: some View {
@@ -214,41 +211,53 @@ struct TemplatesView: View {
     }
     
     private var heroCard: some View {
-        Button {
+        let compactPhoneSizing = UIDevice.current.userInterfaceIdiom == .phone && !isMaxSizedPhone && selectedTab == .cv
+        let maxPhoneSizing = UIDevice.current.userInterfaceIdiom == .phone && isMaxSizedPhone
+        let iconBoxSize: CGFloat = compactPhoneSizing ? 68 : (maxPhoneSizing ? 80 : 74)
+        let primaryTitleSize: CGFloat = compactPhoneSizing ? 24 : 28
+        let secondaryTitleSize: CGFloat = compactPhoneSizing ? 13 : 14
+        let leadingIconSize: CGFloat = compactPhoneSizing ? 24 : (maxPhoneSizing ? 33 : 26)
+        let leadingIconYOffset: CGFloat = maxPhoneSizing ? 3 : 0
+        let trailingIconSize: CGFloat = compactPhoneSizing ? 20 : 22
+        let cardPadding: CGFloat = compactPhoneSizing ? 14 : 16
+        let cardCornerRadius: CGFloat = compactPhoneSizing ? 24 : 26
+        
+        return Button {
             openFeaturedTemplate()
         } label: {
             HStack(spacing: 14) {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(TemplatesPalette.accentSoft)
-                    .frame(width: 74, height: 74)
+                    .frame(width: iconBoxSize, height: iconBoxSize)
                     .overlay(
                         Image(systemName: selectedTab.systemImage)
-                            .font(.system(size: 26, weight: .medium))
+                            .font(.system(size: leadingIconSize, weight: .medium))
                             .foregroundStyle(TemplatesPalette.accent)
+                            .offset(y: leadingIconYOffset)
                     )
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(selectedTab.actionTitle)
-                        .font(.system(size: 28, weight: .medium, design: .rounded))
+                        .font(.system(size: primaryTitleSize, weight: .medium, design: .rounded))
                         .foregroundStyle(TemplatesPalette.ink)
                     Text("with premium templates")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .font(.system(size: secondaryTitleSize, weight: .medium, design: .rounded))
                         .foregroundStyle(TemplatesPalette.muted)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: trailingIconSize, weight: .semibold))
                     .foregroundStyle(TemplatesPalette.accent)
                     .padding(.trailing, 4)
             }
-            .padding(16)
+            .padding(cardPadding)
             .background(
-                RoundedRectangle(cornerRadius: 26)
+                RoundedRectangle(cornerRadius: cardCornerRadius)
                     .fill(TemplatesPalette.card)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 26)
+                        RoundedRectangle(cornerRadius: cardCornerRadius)
                             .stroke(TemplatesPalette.line, lineWidth: 1)
                     )
                     .shadow(color: TemplatesPalette.shadow, radius: 14, x: 0, y: 8)
@@ -615,6 +624,12 @@ struct CVTemplateDetailView: View {
     @State private var showingError = false
     @State private var showingPDFPreview = false
     
+    private var createResumeButtonHeight: CGFloat {
+        let isPhone = UIDevice.current.userInterfaceIdiom == .phone
+        let isMaxSizedPhone = isPhone && UIScreen.main.bounds.width >= 428
+        return (isPhone && !isMaxSizedPhone) ? 48 : 56
+    }
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -669,7 +684,7 @@ struct CVTemplateDetailView: View {
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 56)
+                            .frame(height: createResumeButtonHeight)
                             .background(TemplatesPalette.accent)
                             .foregroundColor(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 16))

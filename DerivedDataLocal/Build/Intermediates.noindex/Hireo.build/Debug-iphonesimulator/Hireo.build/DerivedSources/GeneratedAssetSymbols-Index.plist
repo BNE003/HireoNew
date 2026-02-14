@@ -26,6 +26,56 @@
 			<key>swiftSymbol</key>
 			<string>_2</string>
 		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageName3</string>
+			<key>relativePath</key>
+			<string>./3.imageset</string>
+			<key>swiftSymbol</key>
+			<string>_3</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageName4</string>
+			<key>relativePath</key>
+			<string>./4.imageset</string>
+			<key>swiftSymbol</key>
+			<string>_4</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageName5</string>
+			<key>relativePath</key>
+			<string>./5.imageset</string>
+			<key>swiftSymbol</key>
+			<string>_5</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageName6</string>
+			<key>relativePath</key>
+			<string>./6.imageset</string>
+			<key>swiftSymbol</key>
+			<string>_6</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/benediktheld/Documents/dev/HireoNew/Hireo-app/Hireo/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageName7</string>
+			<key>relativePath</key>
+			<string>./7.imageset</string>
+			<key>swiftSymbol</key>
+			<string>_7</string>
+		</dict>
 	</array>
 	<key>symbols</key>
 	<array/>
